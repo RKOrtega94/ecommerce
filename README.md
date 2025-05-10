@@ -17,6 +17,18 @@ This project is a full e-commerce solution integration
 
    ```bash
    git submodule update --init --recursive
-   # OR RUN
-   ./setup # this will also install the dependencies
    ```
+
+2. Run and configure nexus in local:
+
+   ```bash
+   docker run -d -p 8081:8081 --name nexus -v nexus-data:/nexus-data sonatype/nexus3
+   ```
+
+   - Open `http://localhost:8081` and login with `admin` and the password found in `nexus-data/admin.password`
+
+     - Run the following command to get the password:
+
+       ```bash
+       docker exec -it nexus cat /nexus-data/admin.password
+       ```
