@@ -18,3 +18,7 @@
     path = backend/core/config_server
     url = https://github.com/RKOrtega94/ecommerce.config-server.git
     branch = main
+[submodule "backend/core/properties"]
+	path = backend/core/properties
+	url = https://github.com/RKOrtega94/ecommerce.properties.git
+	branch = main
