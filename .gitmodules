@@ -1,0 +1,4 @@
+[submodule "backend/core/gateway"]
+	path = backend/core/gateway
+	url = https://github.com/RKOrtega94/ecommerce.gateway.git
+	branch = main
