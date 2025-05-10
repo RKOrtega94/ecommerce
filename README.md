@@ -19,7 +19,7 @@ This project is a full e-commerce solution integration
    git submodule update --init --recursive
    ```
 
-2. Run and configure nexus in local:
+2. Run and configure nexus in local: `(Docker is required)`
 
    ```bash
    docker run -d -p 8081:8081 --name nexus -v nexus-data:/nexus-data sonatype/nexus3
