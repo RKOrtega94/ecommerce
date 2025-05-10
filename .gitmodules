@@ -2,3 +2,7 @@
 	path = backend/core/gateway
 	url = https://github.com/RKOrtega94/ecommerce.gateway.git
 	branch = main
+[submodule "backend/libs/commons"]
+	path = backend/libs/commons
+	url = https://github.com/RKOrtega94/ecommerce.commons.git
+	branch = main
