@@ -43,19 +43,25 @@ This project is a full e-commerce solution integration
          - Set the `Write Policy` to `Allow Redeploy`.
          - Set the `Blob store` to `default`.
 
-   - Configure root `.env` file:
+   - Configure `gradle.properties` file into libraries:
 
-      - Copy `.env.example` to `.env` and set the following variables:
-
-         ```bash
-         NEXUS_URL=http://localhost:8081
-         NEXUS_USERNAME=admin
-         NEXUS_PASSWORD=<your_password>
-         NEXUS_REPOSITORY=ecommerce
-         ```
+      ```gradle
+      org.gradle.configuration-cache=true
+      org.gradle.parallel=true
+      org.gradle.caching=true
+      # Nexus repository
+      nexus.url=NEXUS_URL
+      nexus.username=NEXUS_USER
+      nexus.password=NEXUS_PASSWORD
+      ```
 
    - Publish libraries to nexus: `(publish.bat for windows && publish.sh for Unix)`
 
       ```bash
       ./publish
       ```
+
+   - Review the libraries in Nexus:
+
+      - Go to `Browse` and select the `ecommerce` repository.
+      - You should see the libraries published.
