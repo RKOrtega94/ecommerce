@@ -14,6 +14,7 @@ This project is a full e-commerce solution integration
 ## Getting Started
 
 1. Initialize submodules:
+
    ```bash
    git submodule update --init --recursive
    ```
