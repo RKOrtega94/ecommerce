@@ -14,3 +14,7 @@
 	path = backend/libs/xml_signer
 	url = https://github.com/RKOrtega94/ecommerce.xml_signer.git
 	branch = main
+[submodule "backend/core/config_server"]
+    path = backend/core/config_server
+    url = https://github.com/RKOrtega94/ecommerce.config-server.git
+    branch = main
