@@ -17,4 +17,6 @@ This project is a full e-commerce solution integration
 
    ```bash
    git submodule update --init --recursive
+   # OR RUN
+   ./setup # this will also install the dependencies
    ```
