@@ -16,8 +16,7 @@ services:
       interval: 30s
       timeout: 30s
       retries: 3
-      start_period: 90s # Increased start period to allow config-server to initialize
-
+      start_period: 120s # Increased start period to allow config-server to initialize
   gateway:
     build:
       context: ./backend/core/gateway
