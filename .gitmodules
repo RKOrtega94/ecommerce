@@ -22,3 +22,7 @@
 	path = backend/core/properties
 	url = https://github.com/RKOrtega94/ecommerce.properties.git
 	branch = main
+[submodule "backend/core/eureka_server"]
+	path = backend/core/eureka_server
+	url = https://github.com/RKOrtega94/ecommerce.eureka
+	branch = main
