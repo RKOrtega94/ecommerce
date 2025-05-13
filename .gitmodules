@@ -26,3 +26,7 @@
 	path = backend/core/eureka_server
 	url = https://github.com/RKOrtega94/ecommerce.eureka
 	branch = main
+[submodule "backend/services/security"]
+	path = backend/services/security
+	url = https://github.com/RKOrtega94/ecommerce.security.git
+	branch = main
