@@ -1,0 +1,23 @@
+{
+  "name": "Java & Bun Dev Container",
+  "dockerFile": "Dockerfile",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "installMaven": "false",
+      "installGradle": "true"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "nodeGypDependencies": true
+    }
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y curl unzip && curl -fsSL https://bun.sh/install | bash",
+  "customizations": {
+    "vscode": {
+      "extensions": []
+    }
+  },
+  "forwardPorts": [],
+  "remoteUser": "vscode"
+}
