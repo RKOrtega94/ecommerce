@@ -77,25 +77,29 @@ services:
     depends_on:
       config-server:
         condition: service_healthy # Wait for config-server to be healthy
-      # security-server:
-      #   condition: service_healthy # Wait for security-server to be healthy
+      redis:
+        condition: service_healthy # Wait for Redis to be healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ] # Health check endpoint
       interval: 30s
       timeout: 30s
       retries: 3
     restart: always # Restart the gateway if it fails
+  # Security Server
   security-server:
     build:
       context: ./backend/services/security
       dockerfile: Dockerfile
       args:
         - SERVER_PORT=8082 # Build argument for server port
-        - GRPC_PORT=9090 # Build argument for gRPC port
+        - GRPC_PORT=9092 # Build argument for gRPC port
     ports:
       - "8082:8082" # Expose port 8082 for the security server
       - "9090:9090" # Expose port 9090 the security server (if needed)
     environment:
+      - APP_NAME=security # Application name for the security server
+      - SERVER_PORT=8082 # Server port for the security server
+      - GRPC_PORT=9092 # gRPC port for the security server
       - SPRING_PROFILES_ACTIVE=dev # Set Spring profile to 'dev'
       - DB_HOST=database # Host for the database
       - DB_PORT=5432 # Port for the database
@@ -116,12 +120,12 @@ services:
         condition: service_healthy # Wait for Nexus to be healthy
       redis:
         condition: service_healthy # Wait for Redis to be healthy
-    # healthcheck:
-    #   test: [ "CMD", "curl", "http://localhost:8082/actuator/health" ] # Health check endpoint
-    #   interval: 30s
-    #   timeout: 30s
-    #   retries: 3
-    # restart: always # Restart the security server if it fails
+    healthcheck:
+      test: [ "CMD", "curl", "http://localhost:8082/health/security/status", "--fail" ] # Health check endpoint
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: always # Restart the security server if it fails
   core-service:
     build:
       context: ./backend/services/core

@@ -1,32 +1,40 @@
 [submodule "backend/core/gateway"]
-	path = backend/core/gateway
-	url = https://github.com/RKOrtega94/ecommerce.gateway.git
-	branch = main
+path = backend/core/gateway
+url = https://github.com/RKOrtega94/ecommerce.gateway.git
+branch = main
 [submodule "backend/libs/commons"]
-	path = backend/libs/commons
-	url = https://github.com/RKOrtega94/ecommerce.commons.git
-	branch = main
+path = backend/libs/commons
+url = https://github.com/RKOrtega94/ecommerce.commons.git
+branch = main
 [submodule "backend/libs/pagination"]
-	path = backend/libs/pagination
-	url = https://github.com/RKOrtega94/ecommerce.pagination.git
-	branch = main
+path = backend/libs/pagination
+url = https://github.com/RKOrtega94/ecommerce.pagination.git
+branch = main
 [submodule "backend/libs/xml_signer"]
-	path = backend/libs/xml_signer
-	url = https://github.com/RKOrtega94/ecommerce.xml_signer.git
-	branch = main
+path = backend/libs/xml_signer
+url = https://github.com/RKOrtega94/ecommerce.xml_signer.git
+branch = main
 [submodule "backend/core/config_server"]
-    path = backend/core/config_server
-    url = https://github.com/RKOrtega94/ecommerce.config-server.git
-    branch = main
+path = backend/core/config_server
+url = https://github.com/RKOrtega94/ecommerce.config-server.git
+branch = main
 [submodule "backend/core/properties"]
-	path = backend/core/properties
-	url = https://github.com/RKOrtega94/ecommerce.properties.git
-	branch = main
+path = backend/core/properties
+url = https://github.com/RKOrtega94/ecommerce.properties.git
+branch = main
 [submodule "backend/core/eureka_server"]
-	path = backend/core/eureka_server
-	url = https://github.com/RKOrtega94/ecommerce.eureka
-	branch = main
+path = backend/core/eureka_server
+url = https://github.com/RKOrtega94/ecommerce.eureka
+branch = main
 [submodule "backend/services/security"]
-	path = backend/services/security
-	url = https://github.com/RKOrtega94/ecommerce.security.git
-	branch = main
+path = backend/services/security
+url = https://github.com/RKOrtega94/ecommerce.security.git
+branch = main
+[submodule "backend/services/core"]
+path = backend/services/core
+url = https://github.com/RKOrtega94/ecommerce.core.git
+branch = main
+[submodule "frontend"]
+path = frontend
+url = https://github.com/RKOrtega94/ecommerce.frontend.git
+branch = main
