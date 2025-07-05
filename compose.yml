@@ -1,4 +1,42 @@
 services:
+  kafka:
+    image: apache/kafka-native:latest
+    ports:
+      - "9092:9092" # Expose port 9092 for Kafka
+      - "9093:9093" # Expose port 9093 for Kafka (if needed)
+    environment:
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      # Define listeners
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      # Unique node ID
+      KAFKA_NODE_ID: 1
+      # Controller quorum (single node)
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      # Protocol mapping
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      # Topic auto-creation (optional)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Default number of partitions
+      KAFKA_NUM_PARTITIONS: 1
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "9000:8080" # Expose port 8080 for Kafka UI
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: "local-cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
+    depends_on:
+      - kafka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"] # Health check endpoint
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always # Restart Kafka UI if it fails
   redis:
     image: redis:latest
     command: redis-server
@@ -10,6 +48,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s # Wait 10 seconds before starting health checks
+    restart: always # Restart Redis if it fails
   nexus:
     image: sonatype/nexus3:latest
     container_name: nexus
@@ -25,6 +64,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 180s # Wait 3 minutes before starting health checks (Nexus takes time to start)
+    restart: always # Restart Nexus if it fails
   # Database (PostgreSQL)
   database:
     image: postgres:latest
@@ -72,7 +112,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev # Set Spring profile to 'dev'
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888 # Point to the config server
-      - SECURITY_SERVER_HOST=host.docker.internal # Host for the auth service
+      - SECURITY_SERVER_HOST=security-server # Host for the security server
       - SECURITY_SERVER_PORT=8082 # Port for the auth service
     depends_on:
       config-server:
