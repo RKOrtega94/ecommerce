@@ -1,41 +1,79 @@
 services:
-  kafka:
-    image: apache/kafka-native:latest
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    networks:
+      - kafka-net
     ports:
-      - "9092:9092" # Expose port 9092 for Kafka
-      - "9093:9093" # Expose port 9093 for Kafka (if needed)
+      - "2181:2181"
     environment:
-      KAFKA_PROCESS_ROLES: "broker,controller"
-      # Define listeners
-      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
-      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      # Unique node ID
-      KAFKA_NODE_ID: 1
-      # Controller quorum (single node)
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
-      # Protocol mapping
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
-      # Topic auto-creation (optional)
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      # Default number of partitions
-      KAFKA_NUM_PARTITIONS: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zk-data:/var/lib/zookeeper/data
+      - zk-data:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "127.0.0.1", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always # Restart Zookeeper if it fails
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - kafka-net
+    ports:
+      - "9092:9092"
+      - "9101:9101"   # JMX exporter
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_PROCESS_ROLES: broker
+      # Listeners internals y externos:
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Retención y logs
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # Monitorización (JMX)
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: kafka
+      KAFKA_CLUSTER_ID: "JybohthLRbiYV_1n1VCnrQ"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - kafka-logs:/var/lib/kafka/logs
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      retries: 5
+    restart: always # Restart Kafka if it fails
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
-    ports:
-      - "9000:8080" # Expose port 8080 for Kafka UI
-    environment:
-      DYNAMIC_CONFIG_ENABLED: 'true'
-      KAFKA_CLUSTERS_0_NAME: "local-cluster"
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
     depends_on:
       - kafka
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"] # Health check endpoint
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    networks:
+      - kafka-net
+    ports:
+      - "9000:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "prod-cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
+      # Si usas TLS/SASL, añade: 
+      # KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: "SSL"
+      # KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: "/opt/kafka-ui/certs/truststore.jks"
+      # KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: "changeit"
+      # Monta tus certs si procede:
+    volumes:
+      - ./certs:/opt/kafka-ui/certs:ro
     restart: always # Restart Kafka UI if it fails
   redis:
     image: redis:latest
@@ -149,6 +187,7 @@ services:
       - REDIS_HOST=redis # Host for Redis
       - REDIS_PORT=6379 # Port for Redis
       - REDIS_PASSWORD=${REDIS_PASSWORD:-"password"} # Use environment variable for Redis password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092 # Kafka bootstrap servers
     env_file:
       - .env
     depends_on:
@@ -204,6 +243,11 @@ volumes:
   nexus-data: # Volume for Nexus data
   postgres-data: # Volume for PostgreSQL data
   redisinsight: # Volume for RedisInsight data
+  zk-data: # Volume for Zookeeper data
+  kafka-data: # Volume for Kafka data
+  kafka-logs: # Volume for Kafka logs
 networks:
   default:
     driver: bridge # Use bridge network for all services
+  kafka-net:
+    driver: bridge # Use a separate bridge network for Kafka and Zookeeper
