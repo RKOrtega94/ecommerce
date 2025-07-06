@@ -46,7 +46,6 @@ services:
       # Monitorización (JMX)
       KAFKA_JMX_PORT: 9101
       KAFKA_JMX_HOSTNAME: kafka
-      KAFKA_CLUSTER_ID: "JybohthLRbiYV_1n1VCnrQ"
     volumes:
       - kafka-data:/var/lib/kafka/data
       - kafka-logs:/var/lib/kafka/logs
