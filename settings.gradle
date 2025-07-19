@@ -1,0 +1,18 @@
+rootProject.name = 'e_commerce_solution'
+
+// Include reusable libraries
+include 'backend:libs:commons:lib'
+//include 'backend:libs:xml_signer:lib'
+
+// Include core and service projects as children
+include 'backend:core:config_server'
+include 'backend:core:gateway'
+include 'backend:services:core'
+include 'backend:services:security'
+
+project(':backend:libs:commons:lib').projectDir = file('backend/libs/commons/lib')
+
+project(':backend:core:config_server').projectDir = file('backend/core/config_server')
+project(':backend:core:gateway').projectDir = file('backend/core/gateway')
+project(':backend:services:core').projectDir = file('backend/services/core')
+project(':backend:services:security').projectDir = file('backend/services/security')

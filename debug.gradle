@@ -1,0 +1,12 @@
+// Temporary debug script
+subprojects {
+    println "Project: ${project.path}, Name: ${project.name}"
+}
+
+def appModules = subprojects.findAll { 
+    it.path in [':backend:core:config_server', ':backend:core:gateway', ':backend:services:core'] ||
+    it.name == 'security'
+}
+
+println "AppModules found:"
+appModules.each { println "  - ${it.path}" }

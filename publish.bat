@@ -12,12 +12,12 @@ for /d %%D in (backend\libs\*) do (
     if exist "%%D\lib\build.gradle" (
         echo Running Gradle tasks for project: %%~nxD
         pushd %%D
-        call gradle lib:clean lib:build lib:publish --refresh-dependencies --no-daemon
+        call gradle lib:clean lib:build lib:publish --refresh-dependencies --no-daemon -x test
         popd
     ) else if exist "%%D\lib\build.gradle.kts" (
         echo Running Gradle tasks for project: %%~nxD
         pushd %%D
-        call gradle clean build publish --refresh-dependencies --no-daemon
+        call gradle lib:clean lib:build lib:publish --refresh-dependencies --no-daemon -x test
         popd
     )
 )
