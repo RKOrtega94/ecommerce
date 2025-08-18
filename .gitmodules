@@ -42,3 +42,7 @@ branch = main
 	path = backend/libs/messaging
 	url = https://github.com/RKOrtega94/ecommerce.messaging.git
 	branch = main
+[submodule "backend/core/identity"]
+    path = backend/core/identity
+    url = https://github.com/RKOrtega94/ecommerce.identity.git
+    branch = main
