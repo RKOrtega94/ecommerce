@@ -7,6 +7,7 @@ include 'backend:libs:commons:lib'
 // Include core and service projects as children
 include 'backend:core:config_server'
 include 'backend:core:gateway'
+include 'backend:core:identity'
 include 'backend:services:core'
 include 'backend:services:security'
 
@@ -14,5 +15,6 @@ project(':backend:libs:commons:lib').projectDir = file('backend/libs/commons/lib
 
 project(':backend:core:config_server').projectDir = file('backend/core/config_server')
 project(':backend:core:gateway').projectDir = file('backend/core/gateway')
+project(':backend:core:identity').projectDir = file('backend/core/identity')
 project(':backend:services:core').projectDir = file('backend/services/core')
 project(':backend:services:security').projectDir = file('backend/services/security')
