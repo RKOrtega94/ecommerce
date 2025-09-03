@@ -1,4 +1,60 @@
-.idea
-.vscode
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Gradle
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Maven
+target/
+
+# IDEs
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
 .env
-**/build
+
+# Node
+node_modules/
+
+# Coverage
+coverage/
+test-results/
+
+# Misc
+.settings/
+.classpath
+.project
+
+# Frontend build
+frontend/webapp/dist/
+frontend/webapp/build/
+
+# Libs
+libs/*/lib/
+
+# Docker
+**/.docker/
+
+# Reports
+build/reports/
+
+# Ignore build folders in all subprojects
+**/build/
