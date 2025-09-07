@@ -1,0 +1,229 @@
+syntax = "proto3";
+
+package com.rkortega.commons.grpc.base;
+
+option java_package = "com.ecommerce.commons.grpc.base";
+option java_outer_classname = "BaseProto";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// Common HTTP status codes used in API responses
+enum HttpStatus {
+  HTTP_STATUS_UNSPECIFIED = 0;
+  HTTP_STATUS_OK = 200;
+  HTTP_STATUS_CREATED = 201;
+  HTTP_STATUS_ACCEPTED = 202;
+  HTTP_STATUS_NO_CONTENT = 204;
+  HTTP_STATUS_BAD_REQUEST = 400;
+  HTTP_STATUS_UNAUTHORIZED = 401;
+  HTTP_STATUS_FORBIDDEN = 403;
+  HTTP_STATUS_NOT_FOUND = 404;
+  HTTP_STATUS_METHOD_NOT_ALLOWED = 405;
+  HTTP_STATUS_CONFLICT = 409;
+  HTTP_STATUS_UNPROCESSABLE_ENTITY = 422;
+  HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+  HTTP_STATUS_BAD_GATEWAY = 502;
+  HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
+  HTTP_STATUS_GATEWAY_TIMEOUT = 504;
+}
+
+// Generic API response wrapper
+message ApiResponse {
+  HttpStatus status = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
+
+  oneof response_type {
+    SuccessResponse success = 4;
+    ErrorResponse error = 5;
+    PageableResponse pageable = 6;
+  }
+}
+
+// Successful response with data
+message SuccessResponse {
+  HttpStatus status = 1;
+  string message = 2;
+  google.protobuf.Any data = 3;
+}
+
+// Successful response without data
+message SuccessVoidResponse {
+  HttpStatus status = 1;
+  string message = 2;
+}
+
+// Error response
+message ErrorResponse {
+  HttpStatus status = 1;
+  string message = 2;
+  google.protobuf.Any error = 3;
+  repeated string error_details = 4;
+  string error_code = 5;
+}
+
+// Pageable response for lists
+message PageableResponse {
+  HttpStatus status = 1;
+  string message = 2;
+  Pagination pagination = 3;
+}
+
+// Pagination information
+message Pagination {
+  repeated google.protobuf.Any content = 1;
+  int32 page_number = 2;
+  int32 page_size = 3;
+  int64 total_elements = 4;
+  int32 total_pages = 5;
+  bool first = 6;
+  bool last = 7;
+  bool has_next = 8;
+  bool has_previous = 9;
+  int32 number_of_elements = 10;
+}
+
+// Common sort information
+message Sort {
+  repeated SortOrder orders = 1;
+}
+
+message SortOrder {
+  string property = 1;
+  Direction direction = 2;
+}
+
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_ASC = 1;
+  DIRECTION_DESC = 2;
+}
+
+// Common page request
+message PageRequest {
+  int32 page = 1;
+  int32 size = 2;
+  Sort sort = 3;
+}
+
+// Common validation error
+message ValidationError {
+  string field = 1;
+  string message = 2;
+  string rejected_value = 3;
+}
+
+// Common address structure
+message Address {
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string postal_code = 4;
+  string country = 5;
+  string additional_info = 6;
+}
+
+// Common contact information
+message ContactInfo {
+  string email = 1;
+  string phone = 2;
+  string mobile = 3;
+  Address address = 4;
+}
+
+// Common metadata for entities
+message EntityMetadata {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  string created_by = 4;
+  string updated_by = 5;
+  int64 version = 6;
+  bool active = 7;
+}
+
+// Common money/currency representation
+message Money {
+  string amount = 1; // Using string to avoid floating point precision issues
+  string currency = 2; // ISO 4217 currency code (USD, EUR, etc.)
+}
+
+// Common filter criteria
+message FilterCriteria {
+  string field = 1;
+  FilterOperation operation = 2;
+  repeated string values = 3;
+}
+
+enum FilterOperation {
+  FILTER_OPERATION_UNSPECIFIED = 0;
+  FILTER_OPERATION_EQUALS = 1;
+  FILTER_OPERATION_NOT_EQUALS = 2;
+  FILTER_OPERATION_GREATER_THAN = 3;
+  FILTER_OPERATION_GREATER_THAN_OR_EQUAL = 4;
+  FILTER_OPERATION_LESS_THAN = 5;
+  FILTER_OPERATION_LESS_THAN_OR_EQUAL = 6;
+  FILTER_OPERATION_CONTAINS = 7;
+  FILTER_OPERATION_STARTS_WITH = 8;
+  FILTER_OPERATION_ENDS_WITH = 9;
+  FILTER_OPERATION_IN = 10;
+  FILTER_OPERATION_NOT_IN = 11;
+  FILTER_OPERATION_BETWEEN = 12;
+  FILTER_OPERATION_IS_NULL = 13;
+  FILTER_OPERATION_IS_NOT_NULL = 14;
+}
+
+// Common search request
+message SearchRequest {
+  string query = 1;
+  PageRequest page_request = 2;
+  repeated FilterCriteria filters = 3;
+  Sort sort = 4;
+}
+
+// Health check messages
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    SERVING_STATUS_UNSPECIFIED = 0;
+    SERVING_STATUS_SERVING = 1;
+    SERVING_STATUS_NOT_SERVING = 2;
+    SERVING_STATUS_SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+// Common empty message for void operations
+message Empty {
+}
+
+// Common ID wrapper
+message IdRequest {
+  string id = 1;
+}
+
+// Common bulk operation request
+message BulkRequest {
+  repeated string ids = 1;
+}
+
+// Common bulk operation response
+message BulkResponse {
+  int32 total_processed = 1;
+  int32 successful = 2;
+  int32 failed = 3;
+  repeated BulkOperationResult results = 4;
+}
+
+message BulkOperationResult {
+  string id = 1;
+  bool success = 2;
+  string error_message = 3;
+}
