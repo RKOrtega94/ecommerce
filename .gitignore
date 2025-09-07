@@ -45,3 +45,4 @@ gradlew.bat
 **/gradlew
 **/gradlew.bat
 **/gradle.properties
+**/.gradle
