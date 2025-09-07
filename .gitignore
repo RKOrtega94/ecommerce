@@ -1,60 +1,47 @@
-# Java
-*.class
-*.jar
-*.war
-*.ear
-
-# Gradle
-.gradle/
+HELP.md
+.gradle
 build/
-out/
 !gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Maven
-target/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
 
-# IDEs
+### IntelliJ IDEA ###
+.idea
+*.iws
 *.iml
 *.ipr
-*.iws
-.idea/
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
 .vscode/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-logs/
-
-# Environment
+gradle.properties
+/logs
+gradle
+gradlew
+gradlew.bat
 .env
-
-# Node
-node_modules/
-
-# Coverage
-coverage/
-test-results/
-
-# Misc
-.settings/
-.classpath
-.project
-
-# Frontend build
-frontend/webapp/dist/
-frontend/webapp/build/
-
-# Libs
-libs/*/lib/
-
-# Docker
-**/.docker/
-
-# Reports
-build/reports/
-
-# Ignore build folders in all subprojects
-**/build/
+**/gradle
+**/gradlew
+**/gradlew.bat
+**/gradle.properties
