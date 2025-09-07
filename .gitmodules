@@ -46,3 +46,7 @@ branch = main
     path = backend/core/identity
     url = https://github.com/RKOrtega94/ecommerce.identity.git
     branch = main
+[submodule "backend/core/discovery-server"]
+    path = backend/core/discovery-server
+    url =https://github.com/RKOrtega94/ecommerce.discovery.git
+    branch = main
