@@ -50,3 +50,7 @@ branch = main
     path = backend/core/discovery-server
     url =https://github.com/RKOrtega94/ecommerce.discovery.git
     branch = main
+[submodule "backend/libs/grpc-common"]
+	path = backend/libs/grpc-common
+	url = https://github.com/RKOrtega94/ecommerce.grpc-common.git
+    branch = main
