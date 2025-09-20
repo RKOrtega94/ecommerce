@@ -1,0 +1,364 @@
+// ================================
+// PLUGIN DEFINITIONS AND VERSIONS
+// ================================
+plugins {
+    id 'org.springframework.boot' version '3.5.5' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.google.protobuf' version '0.9.5' apply false
+    id 'org.flywaydb.flyway' version '11.12.0' apply false
+    id "com.github.ben-manes.versions" version "0.52.0"
+    id 'java'
+}
+
+// ================================
+// GLOBAL CONFIGURATION
+// ================================
+allprojects {
+    group = 'com.ecommerce'
+    version = '1.0.0'
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}
+
+// ================================
+// SHARED DEPENDENCY VERSIONS
+// ================================
+ext {
+    springBootVersion = '3.5.5'
+    springCloudVersion = '2025.0.0'
+    lombokVersion = '1.18.38'
+    protobufVersion = '4.32.0'
+    grpcVersion = '1.71.0'
+    grpcSpringBootVersion = '3.1.0.RELEASE'
+    jwtVersion = '0.12.7'
+    modelmapperVersion = '3.2.4'
+    mapstructVersion = '1.6.3'
+}
+
+// ================================
+// SUBPROJECTS CONFIGURATION
+// ================================
+subprojects {
+    // Skip configuration for container projects that don't have source code
+    if (project.path in [':core', ':libs', ':services']) {
+        return
+    }
+
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(24)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+
+    // Common dependencies for all projects
+    dependencies {
+        implementation 'org.slf4j:slf4j-api:2.0.17'
+        implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
+
+        // Lombok for all projects except config_server
+        if (project.name != 'config_server') {
+            compileOnly "org.projectlombok:lombok:${lombokVersion}"
+            annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        }
+
+        // Testing dependencies
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+// ================================
+// CORE PROJECTS CONFIGURATION
+// (No database connections, except identity)
+// ================================
+configure(subprojects.findAll { it.path.contains(':core:') }) {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    dependencies {
+        // Core Spring Boot dependencies
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+        // Testing
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+        // Config Server specific
+        if (project.name == 'config_server') {
+            implementation 'org.springframework.cloud:spring-cloud-config-server'
+        }
+
+        // Discovery Server specific
+        if (project.name == 'discovery-server') {
+            implementation 'org.springframework.cloud:spring-cloud-starter-config'
+            implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server'
+        }
+
+        // Gateway specific (NO gRPC)
+        if (project.name == 'gateway') {
+            implementation 'org.springframework.cloud:spring-cloud-starter-config'
+            implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+            implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+            testImplementation 'io.projectreactor:reactor-test'
+            testImplementation 'org.springframework.security:spring-security-test'
+        }
+
+        // Identity specific (includes gRPC and database)
+        if (project.name == 'identity') {
+            implementation 'org.springframework.boot:spring-boot-starter-web'
+            implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+            implementation 'org.springframework.boot:spring-boot-starter-security'
+            implementation 'org.springframework.security:spring-security-oauth2-authorization-server'
+            implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+            runtimeOnly 'com.h2database:h2'
+            runtimeOnly 'org.postgresql:postgresql'
+
+            // gRPC dependencies for identity only
+            implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+            implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+            implementation "io.grpc:grpc-stub:${grpcVersion}"
+            implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+
+            // Include commons and grpc-common libs
+            implementation project(':libs:commons:lib')
+            implementation project(':libs:grpc-common:lib')
+        }
+    }
+}
+
+// ================================
+// IDENTITY PROTOBUF CONFIGURATION
+// (Separate configuration only for identity)
+// ================================
+configure(subprojects.findAll { it.name == 'identity' && it.path.contains(':core:') }) {
+    apply plugin: 'com.google.protobuf'
+
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
+        }
+    }
+}
+
+// ================================
+// SERVICES PROJECTS CONFIGURATION
+// (Include database connections and gRPC)
+// ================================
+configure(subprojects.findAll { it.path.contains(':services:') }) {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.google.protobuf'
+    apply plugin: 'org.flywaydb.flyway'
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    dependencies {
+        // Core Spring Boot dependencies  
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+        // Cloud configuration
+        implementation('org.springframework.cloud:spring-cloud-starter-config') {
+            exclude group: 'org.springframework', module: 'spring-webflux'
+            exclude group: 'io.projectreactor', module: 'reactor-core'
+            exclude group: 'io.projectreactor.netty', module: 'reactor-netty'
+        }
+        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+        // Database dependencies
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+        runtimeOnly 'org.postgresql:postgresql'
+        runtimeOnly 'com.h2database:h2'
+
+        // Security dependencies
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+        implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+        implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+        implementation 'org.springframework.security:spring-security-oauth2-jose'
+        implementation 'org.springframework.security:spring-security-oauth2-authorization-server'
+
+        // JWT dependencies
+        implementation "io.jsonwebtoken:jjwt-api:${jwtVersion}"
+        implementation "io.jsonwebtoken:jjwt-impl:${jwtVersion}"
+        implementation "io.jsonwebtoken:jjwt-jackson:${jwtVersion}"
+
+        // Messaging
+        implementation 'org.springframework.kafka:spring-kafka'
+
+        // Database migration
+        implementation 'org.flywaydb:flyway-core'
+        implementation 'org.flywaydb:flyway-database-postgresql'
+
+        // Utilities
+        implementation "org.modelmapper:modelmapper:${modelmapperVersion}"
+
+        // gRPC dependencies for all services (simplified)
+        implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+        implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+        implementation "io.grpc:grpc-stub:${grpcVersion}"
+        implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+        implementation "io.grpc:grpc-services:${grpcVersion}"
+
+        // gRPC Spring Boot integration
+        implementation "net.devh:grpc-server-spring-boot-starter:${grpcSpringBootVersion}"
+        implementation "net.devh:grpc-client-spring-boot-starter:${grpcSpringBootVersion}"
+        implementation "net.devh:grpc-common-spring-boot:${grpcSpringBootVersion}"
+
+        // Include all libs dependencies
+        implementation project(':libs:commons:lib')
+
+        // Testing dependencies
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.security:spring-security-test'
+        testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+
+        // Mapstruct
+        implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+        annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+        annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
+
+        implementation 'com.rkortega.libs:grpc-common-proto:1.0.0-SNAPSHOT'
+    }
+
+    // Protobuf configuration for services
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
+        }
+    }
+
+    // Java compilation configuration for annotation processing
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += ['-Amapstruct.defaultComponentModel=spring',
+                                 '-Amapstruct.suppressGeneratorTimestamp=true']
+    }
+
+    // Database configuration
+    def dbHost = System.getenv("DB_HOST") ?: "localhost"
+    def dbPort = System.getenv("DB_PORT") ?: "5432"
+    def dbName = System.getenv("DB_NAME") ?: "mydb"
+    def dbUser = System.getenv("DB_USER") ?: "user"
+    def dbPassword = System.getenv("DB_PASSWORD") ?: "password"
+
+    flyway {
+        url = "jdbc:postgresql://${dbHost}:${dbPort}/${dbName}"
+        user = dbUser
+        password = dbPassword
+        locations = ["classpath:db/migration"]
+    }
+}
+
+// ================================
+// SERVICE-SPECIFIC CONFIGURATIONS
+// ================================
+// Core service specific main class
+configure(subprojects.findAll { it.name == 'core' && it.path.contains(':services:') }) {
+    springBoot {
+        mainClass = 'com.rkortega.core_service.CoreServiceApplication'
+    }
+}
+
+// ================================
+// LIBS PROJECTS CONFIGURATION
+// (Spring Core implementation)
+// ================================
+configure(subprojects.findAll { it.path.contains(':libs:') }) {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    // Disable Spring Boot jar creation for libraries, but skip grpc-common:lib since it has its own build.gradle
+    if (!project.path.contains(':grpc-common:lib')) {
+        afterEvaluate {
+            if (tasks.findByName('bootJar')) {
+                bootJar.enabled = false
+            }
+            if (tasks.findByName('jar')) {
+                jar.enabled = true
+                jar.archiveClassifier = '' // Remove the 'plain' classifier
+            }
+        }
+    }
+
+    dependencies {
+        // Skip grpc-common:lib since it has its own dependencies in its build.gradle
+        if (!project.path.contains(':grpc-common:lib')) {
+            // All libs implement Spring Core
+            implementation 'org.springframework:spring-core'
+            implementation 'org.springframework:spring-context'
+            implementation 'org.springframework:spring-beans'
+        }
+
+        // Commons lib specific dependencies
+        if (project.name == 'lib' && project.path.contains(':commons:')) {
+            implementation 'org.springframework.boot:spring-boot-starter-web'
+            implementation 'com.fasterxml.jackson.core:jackson-databind'
+            implementation 'org.apache.commons:commons-lang3:3.14.0'
+            implementation 'commons-codec:commons-codec:1.16.0'
+            implementation "org.modelmapper:modelmapper:${modelmapperVersion}"
+        }
+
+        // XML signer lib specific dependencies
+        if (project.name == 'lib' && project.path.contains(':xml_signer:')) {
+            implementation 'com.googlecode.xades4j:xades4j:1.7.0'
+            implementation 'org.slf4j:slf4j-simple:2.0.16'
+        }
+    }
+}
