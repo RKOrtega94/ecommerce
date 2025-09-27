@@ -22,6 +22,12 @@ allprojects {
         mavenLocal()
         gradlePluginPortal()
     }
+
+    dependencyUpdates {
+        rejectVersionIf {
+            !isStable(it.candidate.version)
+        }
+    }
 }
 
 // ================================
@@ -100,55 +106,86 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
         }
     }
 
-    dependencies {
-        // Core Spring Boot dependencies
-        implementation "org.springframework.boot:spring-boot-starter"
-        implementation "org.springframework.boot:spring-boot-starter-actuator"
-        implementation "org.springframework.boot:spring-boot-starter-validation"
-        developmentOnly "org.springframework.boot:spring-boot-devtools"
+    // Config Server specific configuration
+    if (project.name == "config_server") {
+        apply plugin: "java"
 
-        // Testing
-        testImplementation "org.springframework.boot:spring-boot-starter-test"
-
-        // Config Server specific
-        if (project.name == "config_server") {
-            implementation "org.springframework.cloud:spring-cloud-config-server"
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(24)
+            }
         }
 
-        // Discovery Server specific
-        if (project.name == "discovery-server") {
-            implementation "org.springframework.cloud:spring-cloud-starter-config"
-            implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-server"
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = 'UTF-8'
         }
 
-        // Gateway specific (NO gRPC)
-        if (project.name == "gateway") {
-            implementation "org.springframework.cloud:spring-cloud-starter-config"
-            implementation "org.springframework.cloud:spring-cloud-starter-gateway"
-            implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client"
-            testImplementation "io.projectreactor:reactor-test"
-            testImplementation "org.springframework.security:spring-security-test"
+        dependencies {
+            implementation 'org.springframework.boot:spring-boot-starter'
+            implementation 'org.springframework.boot:spring-boot-starter-actuator'
+            implementation 'org.springframework.boot:spring-boot-starter-validation'
+            developmentOnly 'org.springframework.boot:spring-boot-devtools'
+            implementation 'org.springframework.cloud:spring-cloud-config-server'
+            implementation 'org.slf4j:slf4j-api:2.0.17'
+            implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
+            testImplementation 'org.springframework.boot:spring-boot-starter-test'
+            testImplementation 'org.junit.jupiter:junit-jupiter'
+            testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
         }
 
-        // Identity specific (includes gRPC and database)
-        if (project.name == "identity") {
-            implementation "org.springframework.boot:spring-boot-starter-web"
-            implementation "org.springframework.boot:spring-boot-starter-data-jpa"
-            implementation "org.springframework.boot:spring-boot-starter-security"
-            implementation "org.springframework.security:spring-security-oauth2-authorization-server"
-            implementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
-            runtimeOnly "com.h2database:h2"
-            runtimeOnly "org.postgresql:postgresql"
+        test {
+            useJUnitPlatform()
+        }
 
-            // gRPC dependencies for identity only
-            implementation "${ioGrpc}:grpc-netty-shaded:${grpcVersion}"
-            implementation "${ioGrpc}:grpc-protobuf:${grpcVersion}"
-            implementation "${ioGrpc}:grpc-stub:${grpcVersion}"
-            implementation "${protoBufGroup}:protobuf-java:${protoBufVersion}"
+        springBoot {
+            mainClass = 'com.rkortega.config_server.ConfigServerApplication'
+        }
+    } else {
+        dependencies {
+            // Core Spring Boot dependencies
+            implementation "org.springframework.boot:spring-boot-starter"
+            implementation "org.springframework.boot:spring-boot-starter-actuator"
+            implementation "org.springframework.boot:spring-boot-starter-validation"
+            developmentOnly "org.springframework.boot:spring-boot-devtools"
 
-            // Include commons and grpc-common libs
-            implementation project(":libs:commons:lib")
-            implementation project(":libs:grpc-common:lib")
+            // Testing
+            testImplementation "org.springframework.boot:spring-boot-starter-test"
+
+            // Discovery Server specific
+            if (project.name == "discovery-server") {
+                implementation "org.springframework.cloud:spring-cloud-starter-config"
+                implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-server"
+            }
+
+            // Gateway specific (NO gRPC)
+            if (project.name == "gateway") {
+                implementation "org.springframework.cloud:spring-cloud-starter-config"
+                implementation "org.springframework.cloud:spring-cloud-starter-gateway"
+                implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client"
+                testImplementation "io.projectreactor:reactor-test"
+                testImplementation "org.springframework.security:spring-security-test"
+            }
+
+            // Identity specific (includes gRPC and database)
+            if (project.name == "identity") {
+                implementation "org.springframework.boot:spring-boot-starter-web"
+                implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+                implementation "org.springframework.boot:spring-boot-starter-security"
+                implementation "org.springframework.security:spring-security-oauth2-authorization-server"
+                implementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
+                runtimeOnly "com.h2database:h2"
+                runtimeOnly "org.postgresql:postgresql"
+
+                // gRPC dependencies for identity only
+                implementation "${ioGrpc}:grpc-netty-shaded:${grpcVersion}"
+                implementation "${ioGrpc}:grpc-protobuf:${grpcVersion}"
+                implementation "${ioGrpc}:grpc-stub:${grpcVersion}"
+                implementation "${protoBufGroup}:protobuf-java:${protoBufVersion}"
+
+                // Include commons and grpc-common libs
+                implementation project(":libs:commons:lib")
+                implementation project(":libs:grpc-common:lib")
+            }
         }
     }
 }
@@ -162,7 +199,7 @@ configure(subprojects.findAll { it.name == "identity" && it.path.contains(":core
 
     protobuf {
         protoc {
-            artifact = "${protoBufGroup}:protoc:${protoBufVersion}:windows-x86_64@exe"
+            artifact = "com.google.protobuf:protoc:${protoBufVersion}:windows-x86_64@exe"
         }
         plugins {
             grpc {
@@ -270,7 +307,7 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
     // Protobuf configuration for services
     protobuf {
         protoc {
-            artifact = "${protoBufGroup}:protoc:${protoBufVersion}:windows-x86_64@exe"
+            artifact = "com.google.protobuf:protoc:${protoBufVersion}:windows-x86_64@exe"
         }
         plugins {
             grpc {
@@ -374,10 +411,52 @@ def isStable(String version) {
     return stableKeyword || version ==~ regex
 }
 
-allprojects {
-    dependencyUpdates {
-        rejectVersionIf {
-            !isStable(it.candidate.version)
+// ================================
+// CUSTOM CLEAN TASK FOR WINDOWS
+// ================================
+tasks.register('forceClean') {
+    group = 'build'
+    description = 'Force clean all build directories on Windows'
+
+    doLast {
+        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+            // Stop all Gradle daemons first
+            try {
+                def stopDaemon = "./gradlew --stop".execute()
+                stopDaemon.waitFor()
+                Thread.sleep(2000) // Wait 2 seconds
+            } catch (Exception e) {
+                println "Warning: Could not stop daemon: ${e.message}"
+            }
+
+            // Force delete all build directories using command line
+            def buildDirs = ['build',
+                             'libs/commons/build',
+                             'libs/xml_signer/build',
+                             'libs/grpc-common/build',
+                             'libs/commons/lib/build',
+                             'libs/xml_signer/lib/build',
+                             'libs/grpc-common/lib/build',
+                             'core/config_server/build',
+                             'core/discovery-server/build',
+                             'core/gateway/build',
+                             'core/identity/build',
+                             'services/core/build',
+                             'services/security/build',
+                             'services/invoicing/build']
+
+            buildDirs.each { dir ->
+                try {
+                    def file = new File(dir)
+                    if (file.exists()) {
+                        def result = "cmd /c rmdir /s /q \"${file.absolutePath}\"".execute()
+                        result.waitFor()
+                        println "Deleted: ${dir}"
+                    }
+                } catch (Exception e) {
+                    println "Could not delete: ${dir} - ${e.message}"
+                }
+            }
         }
     }
 }
