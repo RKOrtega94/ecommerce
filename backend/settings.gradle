@@ -3,7 +3,7 @@ rootProject.name = 'backend'
 // Include reusable libraries
 include 'libs:commons:lib'
 include 'libs:grpc-common:lib'
-include 'libs:xml_signer:lib'
+//include 'libs:xml_signer:lib'
 
 // Include core and service projects as children
 include 'core:config_server'
@@ -16,7 +16,7 @@ include 'services:invoicing'
 
 project(':libs:commons:lib').projectDir = file('libs/commons/lib')
 project(':libs:grpc-common:lib').projectDir = file('libs/grpc-common/lib')
-project(':libs:xml_signer:lib').projectDir = file('libs/xml_signer/lib')
+//project(':libs:xml_signer:lib').projectDir = file('libs/xml_signer/lib')
 
 project(':core:config_server').projectDir = file('core/config_server')
 project(':core:discovery-server').projectDir = file('core/discovery-server')

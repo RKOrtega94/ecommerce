@@ -22,12 +22,6 @@ allprojects {
         mavenLocal()
         gradlePluginPortal()
     }
-
-    dependencyUpdates {
-        rejectVersionIf {
-            !isStable(it.candidate.version)
-        }
-    }
 }
 
 // ================================
@@ -51,10 +45,19 @@ ext {
 }
 
 // ================================
+// DEPENDENCY UPDATE SETTINGS
+// ================================
+dependencyUpdates {
+    rejectVersionIf {
+        !isStable(it.candidate.version)
+    }
+}
+
+// ================================
 // SUBPROJECTS CONFIGURATION
 // ================================
 subprojects {
-    // Skip configuration for container projects that don"t have source code
+    // Skip configuration for container projects that don't have source code
     if (project.path in [":core", ":libs", ":services"]) {
         return
     }
@@ -63,7 +66,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(24)
+            languageVersion = JavaLanguageVersion.of(24) // Use Java 24 to match installed JDK
         }
     }
 
@@ -94,7 +97,6 @@ subprojects {
 
 // ================================
 // CORE PROJECTS CONFIGURATION
-// (No database connections, except identity)
 // ================================
 configure(subprojects.findAll { it.path.contains(":core:") }) {
     apply plugin: "org.springframework.boot"
@@ -108,33 +110,13 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
 
     // Config Server specific configuration
     if (project.name == "config_server") {
-        apply plugin: "java"
-
-        java {
-            toolchain {
-                languageVersion = JavaLanguageVersion.of(24)
-            }
-        }
-
-        tasks.withType(JavaCompile).configureEach {
-            options.encoding = 'UTF-8'
-        }
-
         dependencies {
             implementation 'org.springframework.boot:spring-boot-starter'
             implementation 'org.springframework.boot:spring-boot-starter-actuator'
             implementation 'org.springframework.boot:spring-boot-starter-validation'
             developmentOnly 'org.springframework.boot:spring-boot-devtools'
             implementation 'org.springframework.cloud:spring-cloud-config-server'
-            implementation 'org.slf4j:slf4j-api:2.0.17'
-            implementation 'jakarta.annotation:jakarta.annotation-api:3.0.0'
             testImplementation 'org.springframework.boot:spring-boot-starter-test'
-            testImplementation 'org.junit.jupiter:junit-jupiter'
-            testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-        }
-
-        test {
-            useJUnitPlatform()
         }
 
         springBoot {
@@ -147,8 +129,6 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
             implementation "org.springframework.boot:spring-boot-starter-actuator"
             implementation "org.springframework.boot:spring-boot-starter-validation"
             developmentOnly "org.springframework.boot:spring-boot-devtools"
-
-            // Testing
             testImplementation "org.springframework.boot:spring-boot-starter-test"
 
             // Discovery Server specific
@@ -157,7 +137,7 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
                 implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-server"
             }
 
-            // Gateway specific (NO gRPC)
+            // Gateway specific
             if (project.name == "gateway") {
                 implementation "org.springframework.cloud:spring-cloud-starter-config"
                 implementation "org.springframework.cloud:spring-cloud-starter-gateway"
@@ -166,7 +146,7 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
                 testImplementation "org.springframework.security:spring-security-test"
             }
 
-            // Identity specific (includes gRPC and database)
+            // Identity specific
             if (project.name == "identity") {
                 implementation "org.springframework.boot:spring-boot-starter-web"
                 implementation "org.springframework.boot:spring-boot-starter-data-jpa"
@@ -176,13 +156,13 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
                 runtimeOnly "com.h2database:h2"
                 runtimeOnly "org.postgresql:postgresql"
 
-                // gRPC dependencies for identity only
+                // gRPC dependencies
                 implementation "${ioGrpc}:grpc-netty-shaded:${grpcVersion}"
                 implementation "${ioGrpc}:grpc-protobuf:${grpcVersion}"
                 implementation "${ioGrpc}:grpc-stub:${grpcVersion}"
                 implementation "${protoBufGroup}:protobuf-java:${protoBufVersion}"
 
-                // Include commons and grpc-common libs
+                // Include libs dependencies
                 implementation project(":libs:commons:lib")
                 implementation project(":libs:grpc-common:lib")
             }
@@ -192,18 +172,17 @@ configure(subprojects.findAll { it.path.contains(":core:") }) {
 
 // ================================
 // IDENTITY PROTOBUF CONFIGURATION
-// (Separate configuration only for identity)
 // ================================
 configure(subprojects.findAll { it.name == "identity" && it.path.contains(":core:") }) {
     apply plugin: "com.google.protobuf"
 
     protobuf {
         protoc {
-            artifact = "com.google.protobuf:protoc:${protoBufVersion}:windows-x86_64@exe"
+            artifact = "com.google.protobuf:protoc:${protoBufVersion}"
         }
         plugins {
             grpc {
-                artifact = "${ioGrpc}:protoc-gen-grpc-java:${grpcVersion}:windows-x86_64@exe"
+                artifact = "${ioGrpc}:protoc-gen-grpc-java:${grpcVersion}"
             }
         }
         generateProtoTasks {
@@ -216,12 +195,10 @@ configure(subprojects.findAll { it.name == "identity" && it.path.contains(":core
 
 // ================================
 // SERVICES PROJECTS CONFIGURATION
-// (Include database connections and gRPC)
 // ================================
 configure(subprojects.findAll { it.path.contains(":services:") }) {
     apply plugin: "org.springframework.boot"
     apply plugin: "io.spring.dependency-management"
-    apply plugin: "com.google.protobuf"
     apply plugin: "org.flywaydb.flyway"
 
     dependencyManagement {
@@ -231,7 +208,7 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
     }
 
     dependencies {
-        // Core Spring Boot dependencies  
+        // Core Spring Boot dependencies
         implementation "org.springframework.boot:spring-boot-starter"
         implementation "org.springframework.boot:spring-boot-starter-actuator"
         implementation "org.springframework.boot:spring-boot-starter-web"
@@ -274,7 +251,7 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
         // Utilities
         implementation "org.modelmapper:modelmapper:${modelmapperVersion}"
 
-        // gRPC dependencies for all services (simplified)
+        // gRPC dependencies (for runtime, not generation)
         implementation "${ioGrpc}:grpc-netty-shaded:${grpcVersion}"
         implementation "${ioGrpc}:grpc-protobuf:${grpcVersion}"
         implementation "${ioGrpc}:grpc-stub:${grpcVersion}"
@@ -286,8 +263,14 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
         implementation "net.devh:grpc-client-spring-boot-starter:${grpcSpringBootVersion}"
         implementation "net.devh:grpc-common-spring-boot:${grpcSpringBootVersion}"
 
-        // Include all libs dependencies
+        // Include commons lib
         implementation project(":libs:commons:lib")
+        implementation project(":libs:grpc-common:lib")
+
+        // Mapstruct
+        implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+        annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+        annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
 
         // Testing dependencies
         testImplementation "org.springframework.boot:spring-boot-starter-test"
@@ -295,30 +278,6 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
         testImplementation "org.springframework.boot:spring-boot-testcontainers"
         testImplementation "org.testcontainers:junit-jupiter"
         testImplementation "org.testcontainers:postgresql"
-
-        // Mapstruct
-        implementation "org.mapstruct:mapstruct:${mapstructVersion}"
-        annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
-        annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
-
-        implementation "com.rkortega.libs:grpc-common-proto:1.0.0-SNAPSHOT"
-    }
-
-    // Protobuf configuration for services
-    protobuf {
-        protoc {
-            artifact = "com.google.protobuf:protoc:${protoBufVersion}:windows-x86_64@exe"
-        }
-        plugins {
-            grpc {
-                artifact = "${ioGrpc}:protoc-gen-grpc-java:${grpcVersion}:windows-x86_64@exe"
-            }
-        }
-        generateProtoTasks {
-            all()*.plugins {
-                grpc {}
-            }
-        }
     }
 
     // Java compilation configuration for annotation processing
@@ -327,17 +286,11 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
                                  "-Amapstruct.suppressGeneratorTimestamp=true"]
     }
 
-    // Database configuration
-    def dbHost = System.getenv("DB_HOST") ?: "localhost"
-    def dbPort = System.getenv("DB_PORT") ?: "5432"
-    def dbName = System.getenv("DB_NAME") ?: "mydb"
-    def dbUser = System.getenv("DB_USER") ?: "user"
-    def dbPassword = System.getenv("DB_PASSWORD") ?: "password"
-
+    // Flyway configuration
     flyway {
-        url = "jdbc:postgresql://${dbHost}:${dbPort}/${dbName}"
-        user = dbUser
-        password = dbPassword
+        url = "jdbc:postgresql://${System.getenv('DB_HOST') ?: 'localhost'}:${System.getenv('DB_PORT') ?: '5432'}/${System.getenv('DB_NAME') ?: 'mydb'}"
+        user = System.getenv('DB_USER') ?: 'user'
+        password = System.getenv('DB_PASSWORD') ?: 'password'
         locations = ["classpath:db/migration"]
     }
 }
@@ -345,7 +298,6 @@ configure(subprojects.findAll { it.path.contains(":services:") }) {
 // ================================
 // SERVICE-SPECIFIC CONFIGURATIONS
 // ================================
-// Core service specific main class
 configure(subprojects.findAll { it.name == "core" && it.path.contains(":services:") }) {
     springBoot {
         mainClass = "com.rkortega.core_service.CoreServiceApplication"
@@ -353,58 +305,109 @@ configure(subprojects.findAll { it.name == "core" && it.path.contains(":services
 }
 
 // ================================
-// LIBS PROJECTS CONFIGURATION
-// (Spring Core implementation)
+// DISCOVERY SERVER SPECIFIC CONFIGURATION
 // ================================
-configure(subprojects.findAll { it.path.contains(":libs:") }) {
-    apply plugin: "org.springframework.boot"
-    apply plugin: "io.spring.dependency-management"
-
-    dependencyManagement {
-        imports {
-            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-        }
+configure(subprojects.findAll { it.name == "discovery-server" && it.path.contains(":core:") }) {
+    springBoot {
+        mainClass = "com.ecommerce.discovery_server.DiscoveryServerApplication"
     }
+    // Add any additional custom configuration for discovery-server here
+}
 
-    // Disable Spring Boot jar creation for libraries, but skip grpc-common:lib since it has its own build.gradle
-    if (!project.path.contains(":grpc-common:lib")) {
-        afterEvaluate {
-            if (tasks.findByName("bootJar")) {
-                bootJar.enabled = false
-            }
-            if (tasks.findByName("jar")) {
-                jar.enabled = true
-                jar.archiveClassifier = "" // Remove the "plain" classifier
-            }
-        }
-    }
+// ================================
+// LIBS PROJECTS CONFIGURATION
+// ================================
+configure(subprojects.findAll { it.path.contains(":libs:") && it.name == "lib" }) {
+    apply plugin: "java-library"
+    apply plugin: "maven-publish"
 
     dependencies {
-        // Skip grpc-common:lib since it has its own dependencies in its build.gradle
-        if (!project.path.contains(":grpc-common:lib")) {
-            // All libs implement Spring Core
-            implementation "org.springframework:spring-core"
-            implementation "org.springframework:spring-context"
-            implementation "org.springframework:spring-beans"
-        }
-
         // Commons lib specific dependencies
-        if (project.name == "lib" && project.path.contains(":commons:")) {
-            implementation "org.springframework.boot:spring-boot-starter-web"
-            implementation "com.fasterxml.jackson.core:jackson-databind"
-            implementation "org.apache.commons:commons-lang3:3.14.0"
-            implementation "commons-codec:commons-codec:1.16.0"
-            implementation "org.modelmapper:modelmapper:${modelmapperVersion}"
+        if (project.path.contains(":commons:")) {
+            // Core Spring dependencies
+            api "org.springframework:spring-core:6.2.6"
+            api "org.springframework:spring-context:6.2.6"
+            api "org.springframework:spring-beans:6.2.6"
+            api "org.springframework:spring-web:6.2.6"
+
+            // Spring Data JPA for pagination and entity support
+            api "org.springframework.data:spring-data-commons:3.5.4"
+            api "org.springframework.data:spring-data-jpa:3.5.4"
+
+            // JPA and Hibernate dependencies
+            api "jakarta.persistence:jakarta.persistence-api:3.2.0"
+            api "org.hibernate.orm:hibernate-core:6.6.1.Final"
+            api "org.hibernate.orm:hibernate-jpamodelgen:6.6.1.Final" // For annotation processing
+
+            // Spring Boot dependencies for autoconfiguration and server customization
+            api "org.springframework.boot:spring-boot:3.5.5"
+            api "org.springframework.boot:spring-boot-autoconfigure:3.5.5"
+            api "org.springframework.boot:spring-boot-starter-webflux:3.5.5" // For Netty support
+
+            // Jackson for JSON processing
+            api "com.fasterxml.jackson.core:jackson-databind:2.19.1"
+            api "com.fasterxml.jackson.core:jackson-core:2.19.1"
+
+            // Apache Commons utilities
+            api "org.apache.commons:commons-lang3:3.14.0"
+            api "commons-codec:commons-codec:1.16.0"
+
+            // ModelMapper for object mapping
+            api "org.modelmapper:modelmapper:${modelmapperVersion}"
+
+            // Spring Security for OAuth2 and configuration
+            api "org.springframework.security:spring-security-oauth2-jose:6.4.5"
+            api "org.springframework.security:spring-security-config:6.4.5"
+
+            // Kafka for messaging
+            api "org.springframework.kafka:spring-kafka:3.3.7"
+            api "org.apache.kafka:kafka-clients:4.0.0"
+
+            // Reactor for reactive programming
+            api "io.projectreactor:reactor-core:3.6.6"
+
+            // Logging
+            implementation "org.slf4j:slf4j-api:2.0.17"
+
+            // Lombok for annotation processing
+            compileOnly "org.projectlombok:lombok:${lombokVersion}"
+            annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
         }
 
         // XML signer lib specific dependencies
-        if (project.name == "lib" && project.path.contains(":xml_signer:")) {
-            implementation "com.googlecode.xades4j:xades4j:1.7.0"
-            implementation "org.slf4j:slf4j-simple:2.0.16"
+        if (project.path.contains(":xml_signer:")) {
+            api "com.googlecode.xades4j:xades4j:1.7.0"
+            api "org.slf4j:slf4j-simple:2.0.16"
+        }
+        // gRPC common lib has its own build.gradle, so skip it here
+    }
+}
+
+// ================================
+// gRPC-COMMON LIB PROTOBUF CONFIGURATION
+// ================================
+configure(subprojects.findAll { it.path.contains(":libs:grpc-common:lib") }) {
+    apply plugin: "com.google.protobuf"
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protoBufVersion}"
+        }
+        plugins {
+            grpc {
+                artifact = "${ioGrpc}:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
         }
     }
 }
 
+// ================================
+// UTILITY FUNCTIONS
+// ================================
 def isStable(String version) {
     def stableKeyword = ["RELEASE", "FINAL", "GA"].any { version.toUpperCase().contains(it) }
     def regex = /^[0-9,.v-]+(-r)?$/
@@ -412,50 +415,91 @@ def isStable(String version) {
 }
 
 // ================================
-// CUSTOM CLEAN TASK FOR WINDOWS
+// IMPROVED CLEAN TASKS
 // ================================
+tasks.register('stopDaemons') {
+    group = 'build'
+    description = 'Stop all Gradle daemons'
+    doLast {
+        try {
+            project.exec {
+                commandLine './gradlew', '--stop'
+                ignoreExitValue = true
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to stop daemons: ${e.message}")
+        }
+    }
+}
+
 tasks.register('forceClean') {
     group = 'build'
-    description = 'Force clean all build directories on Windows'
+    description = 'Force clean all build directories'
+    dependsOn 'stopDaemons'
 
     doLast {
-        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-            // Stop all Gradle daemons first
-            try {
-                def stopDaemon = "./gradlew --stop".execute()
-                stopDaemon.waitFor()
-                Thread.sleep(2000) // Wait 2 seconds
-            } catch (Exception e) {
-                println "Warning: Could not stop daemon: ${e.message}"
+        // Wait for daemons to stop
+        Thread.sleep(2000)
+
+        // Define build directories to clean
+        def buildDirs = ['build',
+                         '.gradle',
+                         'libs/commons/build',
+                         'libs/commons/lib/build',
+                         'libs/grpc-common/build',
+                         'libs/grpc-common/lib/build',
+                         'libs/xml_signer/build',
+                         'libs/xml_signer/lib/build',
+                         'core/config_server/build',
+                         'core/discovery-server/build',
+                         'core/gateway/build',
+                         'core/identity/build',
+                         'services/core/build',
+                         'services/security/build',
+                         'services/invoicing/build']
+
+        buildDirs.each { dirPath ->
+            def dir = file(dirPath)
+            if (dir.exists()) {
+                try {
+                    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+                        // Use PowerShell's Remove-Item for better compatibility
+                        project.exec {
+                            commandLine 'powershell', '-Command', "Remove-Item -Recurse -Force '${dir.absolutePath}'"
+                            ignoreExitValue = true
+                        }
+                    } else {
+                        // Use Unix-style deletion
+                        project.exec {
+                            commandLine 'rm', '-rf', dir.absolutePath
+                            ignoreExitValue = true
+                        }
+                    }
+                    logger.lifecycle("Deleted: ${dirPath}")
+                } catch (Exception e) {
+                    logger.warn("Could not delete: ${dirPath} - ${e.message}")
+                }
+            }
+        }
+    }
+}
+
+// Make clean depend on forceClean when on Windows and build files are locked
+if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+    tasks.named('clean').configure {
+        doFirst {
+            // Check if any build directories are locked
+            def locked = false
+            ['libs/commons/build', 'libs/grpc-common/build'].each {
+                def dir = file(it)
+                if (dir.exists() && !dir.canWrite()) {
+                    locked = true
+                }
             }
 
-            // Force delete all build directories using command line
-            def buildDirs = ['build',
-                             'libs/commons/build',
-                             'libs/xml_signer/build',
-                             'libs/grpc-common/build',
-                             'libs/commons/lib/build',
-                             'libs/xml_signer/lib/build',
-                             'libs/grpc-common/lib/build',
-                             'core/config_server/build',
-                             'core/discovery-server/build',
-                             'core/gateway/build',
-                             'core/identity/build',
-                             'services/core/build',
-                             'services/security/build',
-                             'services/invoicing/build']
-
-            buildDirs.each { dir ->
-                try {
-                    def file = new File(dir)
-                    if (file.exists()) {
-                        def result = "cmd /c rmdir /s /q \"${file.absolutePath}\"".execute()
-                        result.waitFor()
-                        println "Deleted: ${dir}"
-                    }
-                } catch (Exception e) {
-                    println "Could not delete: ${dir} - ${e.message}"
-                }
+            if (locked) {
+                logger.lifecycle("Detected locked files, running forceClean first...")
+                tasks.forceClean.execute()
             }
         }
     }

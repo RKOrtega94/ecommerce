@@ -94,6 +94,17 @@ services:
       retries: 5
       start_period: 30s
     restart: always # Restart the config server if it fails
+  eureka-server:
+    build:
+      context: ./backend/core/discovery-server
+      args:
+        - SERVER_PORT=8761 # Build argument for server port
+        - ACTIVE_PROFILE=dev # Build argument for active profile
+        - APPLICATION_NAME=discovery-server # Build argument for application name
+        - BUILD_VERSION=1.0.0 # Build argument for the version
+    ports:
+      - "8761:8761" # Expose port 8761 for the Eureka server
+    image: eureka-server:latest
   gateway:
     build:
       context: ./backend/core/gateway
@@ -128,7 +139,7 @@ services:
       - "5433:5432"
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     volumes:
       - ./create-databases.sql:/docker-entrypoint-initdb.d/create-databases.sql # SQL script to create databases
