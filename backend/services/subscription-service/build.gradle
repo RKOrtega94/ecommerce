@@ -1,0 +1,5 @@
+description = "Security Service"
+
+bootJar {
+    mainClass = "ec.com.ecommerce.SecurityServiceApplication"
+}
