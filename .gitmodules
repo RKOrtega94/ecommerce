@@ -1,0 +1,60 @@
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/RKOrtega94/ecommerce.frontend.git
+	branch = main
+[submodule "backend/core/config-server"]
+	path = backend/core/config-server
+	url = https://github.com/RKOrtega94/ecommerce.core.config-server.git
+	branch = main
+[submodule "backend/core/discovery-server"]
+	path = backend/core/discovery-server
+	url = https://github.com/RKOrtega94/ecommerce.core.discovery-server.git
+	branch = main
+[submodule "backend/core/gateway-server"]
+	path = backend/core/gateway-server
+	url = https://github.com/RKOrtega94/backend.core.gateway-server.git
+	branch = main
+[submodule "backend/core/auth-service"]
+	path = backend/core/auth-service
+	url = https://github.com/RKOrtega94/ecommerce.core.auth-service.git
+	branch = main
+[submodule "backend/libs/commons"]
+	path = backend/libs/commons
+	url = https://github.com/RKOrtega94/ecommerce.libs.commons.git
+	branch = main
+[submodule "backend/libs/component-scan"]
+	path = backend/libs/component-scan
+	url = https://github.com/RKOrtega94/ecommerce.libs.component-scan.git
+	branch = main
+[submodule "backend/libs/grpc-lib"]
+	path = backend/libs/grpc-lib
+	url = https://github.com/RKOrtega94/ecommerce.libs.grpc-lib.git
+	branch = main
+[submodule "backend/libs/paging-and-sorting"]
+	path = backend/libs/paging-and-sorting
+	url = https://github.com/RKOrtega94/ecommerce.libs.paging-and-sorting.git
+	branch = main
+[submodule "backend/properties"]
+	path = backend/properties
+	url = https://github.com/RKOrtega94/ecommerce.properties.git
+	branch = main
+[submodule "backend/services/global-service"]
+	path = backend/services/global-service
+	url = https://github.com/RKOrtega94/ecommerce.services.global-service.git
+	branch = main
+[submodule "backend/services/email-service"]
+	path = backend/services/email-service
+	url = https://github.com/RKOrtega94/ecommerce.services.email-service.git
+	branch = main
+[submodule "backend/services/security-service"]
+	path = backend/services/security-service
+	url = https://github.com/RKOrtega94/ecommerce.services.security-service.git
+	branch = main
+[submodule "backend/services/subscriptions-service"]
+	path = backend/services/subscriptions-service
+	url = https://github.com/RKOrtega94/ecommerce.services.subscription-service.git
+	branch = main
+[submodule "documentation"]
+	path = documentation
+	url = https://github.com/RKOrtega94/ecommerce.documentation.git
+	branch = main
