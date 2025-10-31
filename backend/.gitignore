@@ -1,0 +1,10 @@
+**build
+**bin
+
+.idea
+.vscode
+.gradle
+*.mv.db
+*.trace.db
+logs
+*.log

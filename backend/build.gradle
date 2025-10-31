@@ -1,0 +1,243 @@
+// Root build.gradle for multi-module project
+plugins {
+    id "java"
+    id 'org.springframework.boot' version '3.5.6' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.google.protobuf' version '0.9.4' apply false
+    id 'org.flywaydb.flyway' version '11.13.2' apply false
+    id "org.springdoc.openapi-gradle-plugin" version "1.9.0" apply false
+}
+
+// Configuration common to all sub-projects/modules
+allprojects {
+    group = "ec.com.ecommerce"
+    version = "1.0.0"
+
+    repositories {
+        mavenCentral()
+    }
+
+    ext {
+        set("springCloudVersion", "2025.0.0")
+        set('springGrpcVersion', "0.11.0")
+        set('grpcVersion', '1.75.0')
+        set('protobufVersion', '3.24.3')
+    }
+}
+
+// Configuration specific to each sub-project/module
+subprojects {
+    apply plugin: "java"
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_24
+        targetCompatibility = JavaVersion.VERSION_24
+    }
+
+    dependencies {
+        // Common dependencies for all modules
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-logging'
+        developmentOnly 'org.springframework.boot:spring-boot-devtools'
+        developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+        implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+        annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+
+        // Testing dependencies
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+        testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}"
+        }
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+// =================================
+// CORE MODULES CONFIGURATION
+// =================================
+// Disable bootJar for the core parent module if it exists
+project.findProject(":core")?.with {
+    tasks.named("bootJar") {
+        enabled = false
+    }
+    tasks.named("jar") {
+        enabled = true
+    }
+}
+
+configure(subprojects.findAll { it.path.startsWith(":core:") }) {
+    apply plugin: "org.springframework.boot"
+
+    dependencies {
+        implementation 'org.springframework:spring-context'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    }
+
+    if (project.name == "auth-service") {
+        apply plugin: "com.google.protobuf"
+
+        dependencies {
+            implementation 'io.grpc:grpc-services'
+            implementation 'org.springframework.grpc:spring-grpc-server-web-spring-boot-starter'
+            implementation 'org.springframework.kafka:spring-kafka'
+            testImplementation 'org.springframework.grpc:spring-grpc-test'
+
+            implementation project(":libs:commons")
+            implementation project(":libs:grpc-lib")
+            implementation project(":libs:paging-and-sorting")
+            implementation project(":libs:component-scan")
+        }
+
+        dependencyManagement {
+            imports {
+                mavenBom "org.springframework.grpc:spring-grpc-dependencies:${property('springGrpcVersion')}"
+            }
+        }
+
+        protobuf {
+            protoc {
+                artifact = "com.google.protobuf:protoc:${protobufVersion}"
+            }
+            plugins {
+                grpc {
+                    artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+                }
+            }
+            generateProtoTasks {
+                all()*.plugins {
+                    grpc {
+                        option '@generated=omit'
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =================================
+// SERVICES MODULES CONFIGURATION
+// =================================
+// Disable bootJar for the services parent module if it exists
+project.findProject(":services")?.with {
+    tasks.named("bootJar") {
+        enabled = false
+    }
+    tasks.named("jar") {
+        enabled = true
+    }
+}
+
+configure(subprojects.findAll { it.path.startsWith(":services:") }) {
+    apply plugin: "org.springframework.boot"
+    apply plugin: "com.google.protobuf"
+    apply plugin: "org.flywaydb.flyway"
+    apply plugin: "org.springdoc.openapi-gradle-plugin"
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-batch'
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation "org.springframework.grpc:spring-grpc-server-web-spring-boot-starter"
+        implementation 'org.flywaydb:flyway-database-postgresql'
+        implementation 'org.springframework.cloud:spring-cloud-starter-config'
+        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+        implementation 'org.springframework.kafka:spring-kafka'
+        runtimeOnly 'org.postgresql:postgresql'
+        runtimeOnly "com.h2database:h2"
+        testImplementation 'org.springframework.batch:spring-batch-test'
+        testImplementation 'org.springframework.grpc:spring-grpc-test'
+        testImplementation 'org.springframework.kafka:spring-kafka-test'
+        testImplementation "org.testcontainers:junit-jupiter"
+        testImplementation "org.testcontainers:postgresql"
+        implementation 'org.mapstruct:mapstruct:1.6.3'
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+
+        implementation project(":libs:commons")
+        implementation project(":libs:grpc-lib")
+        implementation project(":libs:paging-and-sorting")
+        implementation project(":libs:component-scan")
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.grpc:spring-grpc-dependencies:${property('springGrpcVersion')}"
+        }
+    }
+
+    flyway {
+        url = "jdbc:postgresql://${System.getenv('DB_HOST') ?: 'localhost'}:${System.getenv('DB_PORT') ?: '5432'}/${System.getenv('DB_NAME') ?: 'mydb'}"
+        user = System.getenv('DB_USER') ?: 'user'
+        password = System.getenv('DB_PASSWORD') ?: 'password'
+        locations = ["classpath:db/migration"]
+        schemas = [System.getenv('DB_SCHEMA') ?: 'public']
+    }
+
+    protobuf {
+        protoc {
+            artifact = "com.google.protobuf:protoc:${protobufVersion}"
+        }
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {
+                    option '@generated=omit'
+                }
+            }
+        }
+    }
+
+    openApi {
+        outputDir.set(file("$buildDir/generated/openapi"))
+        outputFileName.set("${project.name}.yaml")
+    }
+}
+
+// =================================
+// LIBRARIES CONFIGURATION - Non-executable JARs
+// =================================
+// Disable bootJar for the libs parent module if it exists
+project.findProject(":libs")?.with {
+    tasks.named("bootJar") {
+        enabled = false
+    }
+    tasks.named("jar") {
+        enabled = true
+    }
+}
+
+configure(subprojects.findAll { it.path.startsWith(":libs:") }) {
+    apply plugin: "java"
+    apply plugin: "java-library"
+
+    // Disable Spring Boot executable jar/war for library modules
+    tasks.named("bootJar") {
+        enabled = false
+    }
+
+    tasks.named("jar") {
+        enabled = true
+    }
+
+    if (project.name == "grpc-lib") {
+        apply plugin: "com.google.protobuf"
+    }
+}

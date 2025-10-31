@@ -1,0 +1,25 @@
+rootProject.name = "ecommerce-platform"
+
+// ================================
+// CORE MODULES
+// ================================
+include "core:config-server"
+include "core:discovery-server"
+include "core:gateway-server"
+include "core:auth-service"
+
+// ================================
+// SERVICES MODULES
+// ================================
+include "services:security-service"
+include "services:subscription-service"
+include "services:email-service"
+include "services:global-service"
+
+// ================================
+// LIBRARIES
+// ================================
+include "libs:grpc-lib"
+include "libs:commons"
+include "libs:paging-and-sorting"
+include "libs:component-scan"
