@@ -50,3 +50,6 @@ gradlew.bat
 localstack_data/
 .terraform/
 terraform/.terraform.lock.hcl
+**logs
+gradle
+.gradlew
