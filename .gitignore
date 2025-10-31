@@ -53,3 +53,4 @@ terraform/.terraform.lock.hcl
 **logs
 gradle
 .gradlew
+.gradle
