@@ -12,8 +12,8 @@ include "core:auth-service"
 // SERVICES MODULES
 // ================================
 include "services:security-service"
-include "services:subscription-service"
-include "services:email-service"
+//include "services:subscription-service"
+//include "services:email-service"
 include "services:global-service"
 
 // ================================

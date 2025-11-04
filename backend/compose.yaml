@@ -15,7 +15,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always # Restart Redis if it fails
+    restart: always
   kafka:
     image: apache/kafka-native:4.1.0
     restart: unless-stopped
