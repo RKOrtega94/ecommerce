@@ -1,6 +1,5 @@
-version: '3.8'
 services:
-  redis-service:
+  redis:
     image: redis:7.0-alpine
     container_name: redis
     hostname: redis
@@ -18,7 +17,7 @@ services:
       retries: 5
       start_period: 30s
     restart: always
-  kafka-service:
+  kafka:
     image: apache/kafka-native:4.1.0
     restart: unless-stopped
     hostname: kafka
@@ -65,7 +64,7 @@ services:
       KAFKA_CLUSTERS_0_NAME: "local-kafka"
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9094"
     depends_on:
-      kafka-service:
+      kafka:
         condition: service_healthy
     networks:
       - gateway-network
@@ -84,6 +83,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./create-databases.sql:/docker-entrypoint-initdb.d/create-databases.sql:ro
       - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
       - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     networks:
@@ -159,13 +159,11 @@ services:
         SERVICE_NAME: discovery-server
         PROFILE: docker
     container_name: discovery-server
+    hostname: discovery-server
     ports:
       - "8761:8761"
     env_file:
       - .env
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
     depends_on:
       config-server:
         condition: service_healthy
@@ -191,16 +189,14 @@ services:
       - .env
     environment:
       DATABASE_NAME: gateway_db
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
     volumes:
       - ./logs/gateway-server:/app/logs:rw
     depends_on:
+      auth-service:
+        condition: service_healthy
       discovery-server:
         condition: service_healthy
-      kafka-service:
+      kafka:
         condition: service_healthy
       database-service:
         condition: service_healthy
@@ -208,6 +204,45 @@ services:
       - gateway-network
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8080/health/gateway-server/status || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+  auth-service:
+    build:
+      context: ./backend/core/auth-service
+      args:
+        SERVICE_NAME: auth-service
+        PROFILE: docker
+        SERVER_PORT: 8081
+        GRPC_PORT: 9081
+    container_name: auth-service
+    hostname: auth-service
+    ports:
+      - "8081:8081"
+      - "9081:9081"
+    env_file:
+      - .env
+    environment:
+      DATABASE_NAME: auth_db
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+    volumes:
+      - ./logs/auth-server:/app/logs:rw
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      database-service:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - gateway-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8081/health/auth-service/status || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 5

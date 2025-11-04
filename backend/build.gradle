@@ -156,7 +156,7 @@ configure(subprojects.findAll { it.path.startsWith(":services:") }) {
         implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
         implementation 'org.springframework.kafka:spring-kafka'
         runtimeOnly 'org.postgresql:postgresql'
-        runtimeOnly "com.h2database:h2"
+        testRuntimeOnly "com.h2database:h2"
         testImplementation 'org.springframework.batch:spring-batch-test'
         testImplementation 'org.springframework.grpc:spring-grpc-test'
         testImplementation 'org.springframework.kafka:spring-kafka-test'
