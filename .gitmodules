@@ -58,3 +58,7 @@
 	path = documentation
 	url = https://github.com/RKOrtega94/ecommerce.documentation.git
 	branch = main
+[submodule "electronic-signature-app"]
+	path = electronic-signature-app
+	url = https://github.com/RKOrtega94/electronic_signature_app.git
+	branch = main
