@@ -1,3 +1,8 @@
+// Enable automatic JDK toolchain provisioning via Foojay
+plugins {
+	id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+}
+
 rootProject.name = "ecommerce-platform"
 
 // ================================
@@ -15,6 +20,7 @@ include "services:security-service"
 //include "services:subscription-service"
 //include "services:email-service"
 include "services:global-service"
+include "services:electronic-signature-service"
 
 // ================================
 // LIBRARIES

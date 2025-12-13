@@ -7,8 +7,6 @@ services:
     volumes:
       - redis_data:/data
     command: [ "redis-server", "--appendonly", "yes" ]
-    networks:
-      - gateway-network
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
@@ -43,8 +41,6 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
       - ./config:/etc/kafka/custom-config:ro
-    networks:
-      - gateway-network
     healthcheck:
       test: [ "CMD-SHELL", "pgrep -f kafka || exit 1" ]
       interval: 10s
@@ -65,17 +61,37 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    networks:
-      - gateway-network
     restart: always
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "Dk3A7haK1clnP8dOlz7gk9pf1zVEWh4s"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_API_ADDR: "http://0.0.0.0:8200"
+    command: server -dev -dev-root-token-id=Dk3A7haK1clnP8dOlz7gk9pf1zVEWh4s -dev-listen-address=0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    restart: always
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "wget --spider --quiet http://127.0.0.1:8200/v1/sys/health || exit 1",
+      ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
   postgres:
     image: postgres:16-alpine
     container_name: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: gateway_db
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_DB: postgres
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
@@ -83,10 +99,8 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
       - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-    networks:
-      - gateway-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d gateway_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -103,6 +117,7 @@ services:
       -c checkpoint_completion_target=0.9
       -c wal_buffers=16MB
       -c default_statistics_target=100
+      -c hba_file=/etc/postgresql/pg_hba.conf
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
@@ -118,12 +133,163 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - gateway-network
     restart: always
-networks:
-  gateway-network:
-    driver: bridge
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LAYER: core
+        SERVICE: config-server
+        SERVER_PORT: 8888
+    container_name: config-server
+    hostname: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: "file:///properties/{application}"
+    volumes:
+      - ./properties:/properties:ro
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider --quiet http://localhost:8888/health/config-server/status || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
+  discovery-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LAYER: core
+        SERVICE: discovery-server
+        SERVER_PORT: 8761
+    container_name: discovery-server
+    hostname: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      CONFIG_SERVER_URL: "http://config-server:8888"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider --quiet http://localhost:8761/health/discovery-server/status || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LAYER: core
+        SERVICE: gateway-server
+        SERVER_PORT: 8080
+    container_name: gateway
+    hostname: gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      CONFIG_SERVER_URL: "http://config-server:8888"
+      DISCOVERY_SERVER_URL: "http://discovery-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: gateway_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider --quiet http://localhost:8080/health/gateway-server/status || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
+  electronic-signatures:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LAYER: services
+        SERVICE: electronic-signature-service
+        SERVER_PORT: 8081
+        GRPC_PORT: 9091
+    container_name: electronic-signatures
+    hostname: electronic-signatures
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      CONFIG_SERVER_URL: "http://config-server:8888"
+      DISCOVERY_SERVER_URL: "http://discovery-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_DB: electronic_signature_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider --quiet http://localhost:8081/health/electronic-signature-service/status || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
 volumes:
   redis_data:
   kafka_data:

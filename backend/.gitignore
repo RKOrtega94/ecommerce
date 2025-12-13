@@ -3,8 +3,8 @@
 
 .idea
 .vscode
-.gradle
 *.mv.db
 *.trace.db
 logs
 *.log
+**.mvn

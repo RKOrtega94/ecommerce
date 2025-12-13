@@ -1,0 +1,77 @@
+# .dockerignore - best practices for Gradle (Java) projects
+# Keep these files in the build context:
+#   - gradlew, gradle/ (wrapper + scripts)
+#   - build.gradle, settings.gradle, gradle.properties
+# Build from the repository root so Docker COPY ../../... paths work with the Dockerfile.
+# Example: docker build -f images/config-server/Dockerfile.native -t config-server:local .
+
+# -----------------------------
+# Caches and build outputs
+# -----------------------------
+.gradle
+**/build
+build
+
+# -----------------------------
+# IDE and editor files
+# -----------------------------
+.idea
+*.iml
+*.ipr
+*.iws
+.vscode
+
+# Compiled classes and common generated files
+*.class
+out/
+
+# -----------------------------
+# OS and editor temp files
+# -----------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# -----------------------------
+# Logs and reports
+# -----------------------------
+*.log
+**/reports/
+**/tmp/
+
+# -----------------------------
+# Dependency and large node modules
+# -----------------------------
+node_modules/
+target/
+
+# -----------------------------
+# Built archives (exclude by default). If you plan to COPY artifacts (e.g. build/libs/*.jar) into the image,
+# un-ignore the specific files below (example provided).
+# -----------------------------
+*.jar
+*.war
+*.ear
+# Example to include built jars if you want them in context:
+# !build/libs/*.jar
+
+# -----------------------------
+# Secrets and local config
+# -----------------------------
+.env
+secrets/
+*.jks
+*.keystore
+
+# -----------------------------
+# Ensure essential Gradle files are NOT ignored
+# (negations must come after any patterns that could match parent directories)
+# -----------------------------
+!gradlew
+!gradle/
+!build.gradle
+!settings.gradle
+!settings.gradle.kts
+!gradle.properties
+

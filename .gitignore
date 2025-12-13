@@ -45,7 +45,7 @@ gradlew.bat
 **/gradle
 **/gradlew
 **/gradlew.bat
-**/gradle.properties
+gradle.properties
 **/.gradle
 localstack_data/
 .terraform/
