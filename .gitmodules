@@ -62,3 +62,7 @@
 	path = electronic-signature-app
 	url = https://github.com/RKOrtega94/electronic_signature_app.git
 	branch = main
+[submodule "backend/services/electronic-signature-service"]
+	path = backend/services/electronic-signature-service
+	url = https://github.com/RKOrtega94/electronic-signatures.git
+	branch = main
