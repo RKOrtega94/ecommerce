@@ -63,6 +63,25 @@ subprojects {
     test {
         useJUnitPlatform()
     }
+
+    // Configure bootRun task for local development with hot reload
+    tasks.withType(org.springframework.boot.gradle.tasks.run.BootRun) {
+        // Enable Spring DevTools
+        systemProperty 'spring.devtools.restart.enabled', 'true'
+        systemProperty 'spring.devtools.livereload.enabled', 'true'
+
+        // JVM args for development
+        jvmArgs = [
+            '-Xmx2g',
+            '-XX:MaxMetaspaceSize=512m',
+            '-XX:+HeapDumpOnOutOfMemoryError',
+            '-XX:HeapDumpPath=/tmp/heapdump.hprof',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'
+        ]
+
+        // Source resources from build output for hot reload
+        sourceResources sourceSets.main
+    }
 }
 
 // =================================

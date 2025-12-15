@@ -137,7 +137,7 @@ services:
   config-server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
       args:
         LAYER: core
         SERVICE: config-server
@@ -148,9 +148,24 @@ services:
       - "8888:8888"
     environment:
       SPRING_PROFILES_ACTIVE: native
-      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: "file:///properties/{application}"
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: "file:///app/properties/{application}"
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "500"
+      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: "/app/core,/app/services,/app/properties"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      GRADLE_USER_HOME: "/home/gradle/.gradle-config-server"
     volumes:
-      - ./properties:/properties:ro
+      - ./core/config-server/src:/app/core/config-server/src
+      - ./core/config-server/src/main/resources:/app/core/config-server/src/main/resources
+      - ./properties:/app/properties
+      - gradle-cache-config-server:/home/gradle/.gradle-config-server
+    command:
+      - gradle
+      - :core:config-server:bootRun
+      - --no-daemon
     restart: always
     healthcheck:
       test:
@@ -166,7 +181,7 @@ services:
   discovery-server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
       args:
         LAYER: core
         SERVICE: discovery-server
@@ -176,7 +191,26 @@ services:
     ports:
       - "8761:8761"
     environment:
+      SERVER_PORT: 8761
       CONFIG_SERVER_URL: "http://config-server:8888"
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "500"
+      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: "/app/core,/app/services,/app/properties"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      GRADLE_USER_HOME: "/home/gradle/.gradle-discovery-server"
+    volumes:
+      - ./core/discovery-server/src:/app/core/discovery-server/src
+      - ./core/discovery-server/src/main/resources:/app/core/discovery-server/src/main/resources
+      - gradle-cache-discovery-server:/home/gradle/.gradle-discovery-server
+    command:
+      - gradle
+      - :core:discovery-server:bootRun
+      - --no-daemon
     depends_on:
       config-server:
         condition: service_healthy
@@ -192,67 +226,24 @@ services:
       retries: 10
       start_period: 30s
       start_interval: 5s
-  gateway:
+  global:
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        LAYER: core
-        SERVICE: gateway-server
-        SERVER_PORT: 8080
-    container_name: gateway
-    hostname: gateway
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: native
-      CONFIG_SERVER_URL: "http://config-server:8888"
-      DISCOVERY_SERVER_URL: "http://discovery-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: gateway_db
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
-    depends_on:
-      config-server:
-        condition: service_healthy
-      discovery-server:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    restart: always
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --spider --quiet http://localhost:8080/health/gateway-server/status || exit 1",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
-      start_interval: 5s
-  electronic-signatures:
-    build:
-      context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
       args:
         LAYER: services
-        SERVICE: electronic-signature-service
-        SERVER_PORT: 8081
-        GRPC_PORT: 9091
-    container_name: electronic-signatures
-    hostname: electronic-signatures
+        SERVICE: global-service
+        SERVER_PORT: 8082
+        GRPC_PORT: 9082
+    container_name: global
+    hostname: global
     ports:
-      - "8081:8081"
-      - "9091:9091"
+      - "8082:8082"
+      - "9082:9082"
+    command:
+      - gradle
+      - :services:global-service:bootRun
+      - --no-daemon
     environment:
       SPRING_PROFILES_ACTIVE: dev
       CONFIG_SERVER_URL: "http://config-server:8888"
@@ -262,9 +253,21 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
-      DATABASE_DB: electronic_signature_db
+      DATABASE_DB: global_service_db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "500"
+      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: "/app/core,/app/services,/app/properties"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      GRADLE_USER_HOME: "/home/gradle/.gradle-global-service"
+    volumes:
+      - ./services/global-service/src:/app/services/global-service/src
+      - ./services/global-service/src/main/resources:/app/services/global-service/src/main/resources
+      - gradle-cache-global-service:/home/gradle/.gradle-global-service
     depends_on:
       config-server:
         condition: service_healthy
@@ -283,6 +286,71 @@ services:
       test:
         [
           "CMD-SHELL",
+          "wget --spider --quiet http://localhost:8082/health/global-service/status || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
+  electronic-signatures:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      args:
+        LAYER: services
+        SERVICE: electronic-signature-service
+        SERVER_PORT: 8081
+        GRPC_PORT: 9081
+    container_name: electronic-signatures
+    hostname: electronic-signatures
+    ports:
+      - "8081:8081"
+      - "9081:9081"
+    command:
+      - gradle
+      - :services:electronic-signature-service:bootRun
+      - --no-daemon
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      CONFIG_SERVER_URL: "http://config-server:8888"
+      DISCOVERY_SERVER_URL: "http://discovery-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_DB: electronic_signature_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "500"
+      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: "/app/core,/app/services,/app/properties"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      GRADLE_USER_HOME: "/home/gradle/.gradle-electronic-signature-service"
+    volumes:
+      - ./services/electronic-signature-service/src:/app/services/electronic-signature-service/src
+      - ./services/electronic-signature-service/src/main/resources:/app/services/electronic-signature-service/src/main/resources
+      - gradle-cache-electronic-signature-service:/home/gradle/.gradle-electronic-signature-service
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
           "wget --spider --quiet http://localhost:8081/health/electronic-signature-service/status || exit 1",
         ]
       interval: 30s
@@ -290,8 +358,139 @@ services:
       retries: 10
       start_period: 30s
       start_interval: 5s
+#  gateway:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.local
+#      args:
+#        LAYER: core
+#        SERVICE: gateway-server
+#        SERVER_PORT: 8080
+#    container_name: gateway
+#    hostname: gateway
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: native
+#      CONFIG_SERVER_URL: "http://config-server:8888"
+#      DISCOVERY_SERVER_URL: "http://discovery-server:8761/eureka/"
+#      SPRING_DATA_REDIS_HOST: redis
+#      SPRING_DATA_REDIS_PORT: 6379
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
+#      DATABASE_HOST: postgres
+#      DATABASE_PORT: 5432
+#      DATABASE_NAME: gateway_db
+#      DATABASE_USERNAME: postgres
+#      DATABASE_PASSWORD: postgres
+#      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+#      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+#      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+#      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "500"
+#      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: "/app/core,/app/services,/app/properties"
+#      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+#      GRADLE_USER_HOME: "/home/gradle/.gradle-gateway-server"
+#    volumes:
+#      - ./core/gateway-server/src:/app/core/gateway-server/src
+#      - ./core/gateway-server/src/main/resources:/app/core/gateway-server/src/main/resources
+#      - ./core:/app/core:ro
+#      - ./properties:/app/properties
+#      - gradle-cache-gateway-server:/home/gradle/.gradle-gateway-server
+#    depends_on:
+#      config-server:
+#        condition: service_healthy
+#      discovery-server:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#      postgres:
+#        condition: service_healthy
+#    restart: always
+#    healthcheck:
+#      test:
+#        [
+#          "CMD-SHELL",
+#          "wget --spider --quiet http://localhost:8080/health/gateway-server/status || exit 1",
+#        ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 10
+#      start_period: 30s
+#      start_interval: 5s
+
+#  electronic-signatures:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.local
+#      args:
+#        LAYER: services
+#        SERVICE: electronic-signature-service
+#        SERVER_PORT: 8081
+#        GRPC_PORT: 9091
+#    container_name: electronic-signatures
+#    hostname: electronic-signatures
+#    ports:
+#      - "8081:8081"
+#      - "9091:9091"
+#    volumes:
+#      - ./signatures:/signatures
+#      - ./services/electronic-signature-service/src:/app/services/electronic-signature-service/src
+#      - ./services/electronic-signature-service/src/main/resources:/app/services/electronic-signature-service/src/main/resources
+#      - ./services:/app/services:ro
+#      - ./properties:/app/properties
+#      - gradle-cache-electronic-signature-service:/home/gradle/.gradle-electronic-signature-service
+#    environment:
+#      SPRING_PROFILES_ACTIVE: dev
+#      CONFIG_SERVER_URL: "http://config-server:8888"
+#      DISCOVERY_SERVER_URL: "http://discovery-server:8761/eureka/"
+#      SPRING_DATA_REDIS_HOST: redis
+#      SPRING_DATA_REDIS_PORT: 6379
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
+#      DATABASE_HOST: postgres
+#      DATABASE_PORT: 5432
+#      DATABASE_DB: electronic_signature_db
+#      DATABASE_USERNAME: postgres
+#      DATABASE_PASSWORD: postgres
+#      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+#      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+#      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+#      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "500"
+#      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: "/app/core,/app/services,/app/properties"
+#      GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+#    depends_on:
+#      config-server:
+#        condition: service_healthy
+#      discovery-server:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#      postgres:
+#        condition: service_healthy
+#      vault:
+#        condition: service_healthy
+#      global:
+#        condition: service_healthy
+#    restart: always
+#    healthcheck:
+#      test:
+#        [
+#          "CMD-SHELL",
+#          "wget --spider --quiet http://localhost:8081/health/electronic-signature-service/status || exit 1",
+#        ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 10
+#      start_period: 30s
+#      start_interval: 5s
 volumes:
   redis_data:
   kafka_data:
   pgdata:
   pgadmin_data:
+  gradle-cache-config-server:
+  gradle-cache-discovery-server:
+  gradle-cache-global-service:
+  gradle-cache-electronic-signature-service:
