@@ -1,0 +1,113 @@
+include:
+  - ../backend/compose.yaml
+
+services:
+  dev-container:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5005:5005"      # Java Debug Port
+      - "8080:8080"      # Gateway Server
+      - "8081:8081"      # Auth Service
+      - "8761:8761"      # Discovery Server (Eureka)
+      - "8888:8888"      # Config Server
+      - "9090:9090"      # gRPC port (security-service)
+      - "9091:9091"      # gRPC port (auth-service)
+      - "35729:35729"    # LiveReload port
+    volumes:
+      - ..:/workspace:cached
+      - ~/.m2:/root/.m2:cached
+      - gradle-cache:/root/.gradle
+    command: tail -f /dev/null
+    environment:
+      # Spring profiles
+      SPRING_PROFILES_ACTIVE: dev
+
+      # Config Server
+      CONFIG_SERVER_URL: http://localhost:8888
+
+      # Discovery Server (Eureka)
+      DISCOVERY_SERVER_URL: http://localhost:8761/eureka/
+
+      # Database Configuration (PostgreSQL)
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+
+      # Service-specific database names
+      DATABASE_NAME: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SCHEMA: public
+      DB_MIGRATION_PATH: db/migration
+
+      # Specific database names for each service
+      AUTH_DB_NAME: auth_db
+      SECURITY_DB_NAME: security_db
+      GLOBAL_DB_NAME: global_service_db
+      ELECTRONIC_SIGNATURE_DB_NAME: electronic_signature_db
+      GATEWAY_DB_NAME: gateway_db
+
+      # Global DB for electronic-signature-service
+      GLOBAL_DB_HOST: postgres
+
+      # Redis Configuration
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # Kafka Configuration
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+
+      # Server Ports (defaults, can be overridden per service)
+      SERVER_PORT: 8080
+      GRPC_PORT: 9090
+
+      # Spring DevTools Configuration
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_PORT: 35729
+      SPRING_DEVTOOLS_REMOTE_SECRET: mysecret
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: 2000
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: 1000
+
+      # JVM Options for development
+      JAVA_TOOL_OPTIONS: >-
+        -Xmx2g
+        -XX:MaxMetaspaceSize=512m
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/tmp/heapdump.hprof
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+
+      # Gradle configuration
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+      GRADLE_USER_HOME: /root/.gradle
+
+      # Docker Compose Integration
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+volumes:
+  gradle-cache:
