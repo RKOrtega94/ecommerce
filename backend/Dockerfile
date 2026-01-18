@@ -49,7 +49,8 @@ COPY --chown=gradle:gradle core/ core/
 COPY --chown=gradle:gradle services/ services/
 
 # Build the specific service (skip tests for build stage)
-RUN gradle :${LAYER}:${SERVICE}:bootJar --no-daemon -x test && \
+RUN gradle :${LAYER}:${SERVICE}:dependencies --no-daemon && \
+    gradle :${LAYER}:${SERVICE}:build --no-daemon -x test && \
     rm -rf /home/gradle/.gradle/caches/build-cache-* && \
     rm -rf /home/gradle/.gradle/caches/*/generated*
 
@@ -74,10 +75,8 @@ WORKDIR /app
 RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache dumb-init && \
-    rm -rf /var/cache/apk/*
-
-# Create non-root user with specific UID/GID for better security
-RUN addgroup -g 1001 -S spring && \
+    rm -rf /var/cache/apk/* && \
+    addgroup -g 1001 -S spring && \
     adduser -u 1001 -S spring -G spring -h /app
 
 # Copy only the built JAR (smallest possible layer)

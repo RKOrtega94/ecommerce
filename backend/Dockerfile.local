@@ -13,8 +13,7 @@ COPY core/ core/
 COPY services/ services/
 COPY properties/ properties/
 
-EXPOSE ${SERVER_PORT}
-EXPOSE ${GRPC_PORT}
+EXPOSE ${SERVER_PORT} ${GRPC_PORT}
 
 ENV SERVER_PORT=${SERVER_PORT}
 

@@ -1,0 +1,28 @@
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "Dk3A7haK1clnP8dOlz7gk9pf1zVEWh4s"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_API_ADDR: "http://0.0.0.0:8200"
+    command: server -dev -dev-root-token-id=Dk3A7haK1clnP8dOlz7gk9pf1zVEWh4s -dev-listen-address=0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    restart: always
+    volumes:
+      - ./vault_data:/vault/file
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "wget --spider --quiet http://127.0.0.1:8200/v1/sys/health || exit 1",
+      ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+      start_interval: 5s
+volumes:
+  vault_data:

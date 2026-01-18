@@ -1,0 +1,108 @@
+{
+  "name": "E-Commerce Development Container",
+  "dockerComposeFile": [
+    "./compose.yml"
+  ],
+  "service": "dev-container",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": [
+    "sh",
+    "-c",
+    "java --version && gradle --version && npm --version"
+  ],
+  "postStartCommand": "echo '\n🚀 Development Environment Ready!\n\n📊 Services:\n  - PostgreSQL: localhost:5432\n  - Redis: localhost:6379\n  - Kafka: localhost:9092\n  - PgAdmin: http://localhost:5050\n  - Config Server: http://localhost:8888\n  - Discovery Server: http://localhost:8761\n  - Gateway Server: http://localhost:8080\n  - Auth Service: http://localhost:8081\n\n🔧 Debug Port: 5005\n🔄 LiveReload Port: 35729\n'",
+  "runServices": [
+    "postgres",
+    "pgadmin",
+    "redis",
+    "kafka",
+    "kafka-ui",
+    "vault"
+  ],
+  "forwardPorts": [
+    2181,
+    5005,
+    5050,
+    5432,
+    6379,
+    8200,
+    8888,
+    8761,
+    8080,
+    8081,
+    8082,
+    9000,
+    9081,
+    9082,
+    9092,
+    9093,
+    9094,
+    29092,
+    35729
+  ],
+  "portsAttributes": {
+    "5005": { "label": "Java Debug", "onAutoForward": "silent" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "notify" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" },
+    "8200": { "label": "Vault", "onAutoForward": "notify" },
+    "9000": { "label": "Kafka UI", "onAutoForward": "openPreview" },
+    "5050": { "label": "PgAdmin", "onAutoForward": "openPreview" },
+    "8888": { "label": "Config Server", "onAutoForward": "silent" },
+    "8761": { "label": "Eureka Dashboard", "onAutoForward": "openPreview" },
+    "8080": { "label": "Gateway Server", "onAutoForward": "openPreview" },
+    "8081": { "label": "Electronic Signatures", "onAutoForward": "openPreview" },
+    "8082": { "label": "Global Service", "onAutoForward": "openPreview" },
+    "9081": { "label": "e-Signatures gRPC", "onAutoForward": "silent" },
+    "9082": { "label": "Global gRPC", "onAutoForward": "silent" },
+    "9092": { "label": "Kafka 9092", "onAutoForward": "silent" },
+    "9093": { "label": "Kafka 9093", "onAutoForward": "silent" },
+    "9094": { "label": "Kafka 9094", "onAutoForward": "silent" },
+    "35729": { "label": "LiveReload", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-spring-boot-dashboard",
+        "vmware.vscode-spring-boot",
+        "redhat.java",
+        "vscjava.vscode-java-dependency",
+        "vscjava.vscode-java-test",
+        "vscjava.vscode-maven",
+        "vscjava.vscode-gradle",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "humao.rest-client",
+        "rangav.vscode-thunder-client",
+        "cweijan.vscode-postgresql-client2",
+        "getporter.vscode-docker-compose"
+      ],
+      "settings": {
+        "java.jdt.ls.java.home": "/opt/java/openjdk",
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-25",
+            "path": "/opt/java/openjdk",
+            "default": true
+          }
+        ],
+        "spring-boot.ls.java.home": "/opt/java/openjdk",
+        "java.import.gradle.java.home": "/opt/java/openjdk",
+        "spring-boot.ls.checkJVM": false,
+        "java.compile.nullAnalysis.mode": "automatic",
+        "spring.initializr.defaultLanguage": "Java",
+        "files.exclude": {
+          "**/.gradle": true,
+          "**/build": true,
+          "**/*.class": true
+        },
+        "java.debug.settings.hotCodeReplace": "auto",
+        "java.autobuild.enabled": true
+      }
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "remoteUser": "root"
+}
