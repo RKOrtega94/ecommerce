@@ -1,0 +1,5 @@
+include:
+  - ./services/redis/compose.yaml
+  - ./services/postgres/compose.yaml
+  - ./services/kafka/compose.yaml
+  - ./services/vault/compose.yaml

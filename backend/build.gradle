@@ -42,6 +42,22 @@ subprojects {
         options.compilerArgs << '-parameters'
     }
 
+    // Fix for Windows "CreateProcess error=206" - use manifest-only jar
+    tasks.withType(JavaExec).configureEach {
+        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+            doFirst {
+                jvmArgs = (jvmArgs ?: []) + ['-Dspring.profiles.active=dev']
+            }
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+            // Enable manifest-only jar for tests to avoid long classpath
+            systemProperty 'java.io.tmpdir', System.getProperty('java.io.tmpdir')
+        }
+    }
+
     configurations {
         flyway // used by Flyway plugin to resolve database drivers
         compileOnly {
@@ -79,6 +95,17 @@ subprojects {
         }
     }
 
+    configurations.all {
+        resolutionStrategy {
+            force "com.google.protobuf:protobuf-java:${property('protobufVersion')}"
+            force "com.google.protobuf:protobuf-java-util:${property('protobufVersion')}"
+            force "io.grpc:grpc-protobuf:${property('grpcVersion')}"
+            force "io.grpc:grpc-stub:${property('grpcVersion')}"
+            force "io.grpc:grpc-api:${property('grpcVersion')}"
+            force "io.grpc:grpc-core:${property('grpcVersion')}"
+        }
+    }
+
     // Add Flyway Postgres dependency only where the Flyway plugin is applied
     plugins.withId("org.flywaydb.flyway") {
         dependencies {
@@ -88,6 +115,10 @@ subprojects {
 
     test {
         useJUnitPlatform()
+        // Fix for Windows "CreateProcess error=206" - use manifest jar for classpath
+        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+            systemProperty 'junit.platform.launcher.interceptors.enabled', 'true'
+        }
     }
 
     // Configure bootRun task for local development with hot reload
@@ -252,6 +283,7 @@ configure(subprojects.findAll { it.path.startsWith(":services:") }) {
         implementation 'org.springframework.boot:spring-boot-starter-web'
         implementation 'org.springframework.boot:spring-boot-starter-actuator'
         implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
+        implementation "org.springframework.boot:spring-boot-starter-security"
         implementation 'org.flywaydb:flyway-core'
         implementation 'org.flywaydb:flyway-database-postgresql'
         implementation 'org.springframework.cloud:spring-cloud-starter-config'
@@ -279,6 +311,17 @@ configure(subprojects.findAll { it.path.startsWith(":services:") }) {
     dependencyManagement {
         imports {
             mavenBom "org.springframework.grpc:spring-grpc-dependencies:${property('springGrpcVersion')}"
+        }
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force "com.google.protobuf:protobuf-java:${property('protobufVersion')}"
+            force "com.google.protobuf:protobuf-java-util:${property('protobufVersion')}"
+            force "io.grpc:grpc-protobuf:${property('grpcVersion')}"
+            force "io.grpc:grpc-stub:${property('grpcVersion')}"
+            force "io.grpc:grpc-api:${property('grpcVersion')}"
+            force "io.grpc:grpc-core:${property('grpcVersion')}"
         }
     }
 
